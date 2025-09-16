@@ -1,0 +1,12 @@
+{
+  "name": "nitro-app",
+  "private": true,
+  "scripts": {
+    "dev": "PORT=4000 nitro dev",
+    "build": "nitro build"
+  },
+  "devDependencies": {
+    "h3": "^1.15.4",
+    "nitropack": "^2.12.4"
+  }
+}
