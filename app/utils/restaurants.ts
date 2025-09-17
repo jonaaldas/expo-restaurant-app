@@ -13,13 +13,9 @@ interface SearchResponse {
   data: Restaurant[];
 }
 
-interface SaveRestaurantRes {
-  data: string
-}
-
-interface GetAllRestaurantsWithIdsRes {
-  data: string[]
-}
+// Unused interfaces - kept for reference
+// interface SaveRestaurantRes { data: string }
+// interface GetAllRestaurantsWithIdsRes { data: string[] }
 
 export const searchRestaurants = async (params: SearchParams): Promise<Restaurant[]> => {
   const response: SearchResponse = await api('/search', {
@@ -30,25 +26,9 @@ export const searchRestaurants = async (params: SearchParams): Promise<Restauran
   return response.data;
 }
 
-export const saveRestaurant = async (restaurant: Restaurant) =>{
-  try {
-    const response: SaveRestaurantRes = await api("/save", {
-      method: "POST",
-      body: restaurant,
-    });
-    return response.data;
-  } catch (error) {
-    console.log(error);
-    throw error;
-  }
-}
+// These functions are no longer used - we now use Convex for all CRUD operations
+// Keeping them here for reference, but they're not called by the frontend anymore
 
-export const fetchAllRestaurantsWithIds = async () => {
-  const response: GetAllRestaurantsWithIdsRes = await api("/restaurants/ids");
-  return response.data;
-};
-
-export const fetchSavedRestaurants = async (): Promise<Restaurant[]> => {
-  const response: SearchResponse = await api("/restaurants");
-  return response.data;
-};
+// export const saveRestaurant = async (restaurant: Restaurant) => { ... }
+// export const fetchAllRestaurantsWithIds = async () => { ... }  
+// export const fetchSavedRestaurants = async (): Promise<Restaurant[]> => { ... }

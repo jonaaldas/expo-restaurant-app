@@ -1,20 +1,32 @@
 import { Restaurant, SearchParams } from "@/types/restaurants";
 import { createContext, useContext, useState, ReactNode } from "react";
-import { searchRestaurants, saveRestaurant, fetchAllRestaurantsWithIds, fetchSavedRestaurants } from "@/utils/restaurants";
+import { searchRestaurants } from "@/utils/restaurants";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "expo-router";
 import { Alert } from "react-native";
+import { useSavedRestaurants, useAllRestaurantIds } from "@/hooks/useSavedRestaurants";
+import { useNotes, useNotesByRestaurant } from "@/hooks/useNotes";
 
 interface RestaurantContextType {
   restaurants: Restaurant[];
   savedRestaurants: Restaurant[];
   searchRestaurants: (params: SearchParams) => void;
   saveRestaurant: (restaurantId: string) => void;
-  restaurantsIds: string[] | [];
+  removeRestaurant: (restaurantId: string) => void;
+  getAllSavedRestaurants: () => Restaurant[];
+  restaurantsIds: string[];
   isSearching: boolean;
   isSaving: boolean;
   isLoadingSaved: boolean;
-  refetchSavedRestaurants: () => void;
+  isRemoving: boolean;
+  // Notes functions
+  createNote: (restaurantPlaceId: string, title: string, content: string) => Promise<{ success: boolean; error?: string }>;
+  updateNote: (noteId: string, updates: { title?: string; content?: string }) => Promise<{ success: boolean; error?: string }>;
+  deleteNote: (noteId: string) => Promise<{ success: boolean; error?: string }>;
+  getNotesByRestaurant: (restaurantPlaceId: string) => any[];
+  isCreatingNote: boolean;
+  isUpdatingNote: boolean;
+  isDeletingNote: boolean;
 }
 
 export const RestaurantContext = createContext<
@@ -27,11 +39,29 @@ interface RestaurantProviderProps {
 
 export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [savedRestaurants, setSavedRestaurants] = useState<Restaurant[]>([]);
-  const [restaurantsIds, setRestaurantsIds] = useState<string[]>([]); 
   const router = useRouter();
   const queryClient = useQueryClient();
   const pathname = usePathname();
+  
+  // TODO: Get userId from Clerk when implemented
+  const userId = "1";
+  
+  // Use Convex hooks for saved restaurants
+  const { 
+    savedRestaurants, 
+    saveRestaurant: convexSaveRestaurant, 
+    removeRestaurant: convexRemoveRestaurant 
+  } = useSavedRestaurants(userId);
+  
+  const restaurantIds = useAllRestaurantIds(userId);
+
+  // Use Convex hooks for notes
+  const { 
+    createNote: convexCreateNote, 
+    updateNote: convexUpdateNote, 
+    deleteNote: convexDeleteNote 
+  } = useNotes(userId);
+
   const searchRestaurantsMutation = useMutation({
     mutationFn: (params: SearchParams) => searchRestaurants(params),
     onSuccess: (val: Restaurant[]) => {
@@ -46,45 +76,21 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
     }
   });
 
-  useQuery({
-    queryKey: ['restaurants-ids'], 
-    queryFn: async () => {
-      const res = await fetchAllRestaurantsWithIds();
-      setRestaurantsIds(res);
-      return res;
-    }, 
-    enabled: true 
-  })
-
-  const savedRestaurantsQuery = useQuery({
-    queryKey: ['saved-restaurants'],
-    queryFn: async () => {
-      const res = await fetchSavedRestaurants();
-      setSavedRestaurants(res);
-      return res;
-    },
-    enabled: true
-  })
-
   const saveRestaurantMutation = useMutation({
-    mutationFn: (restaurantId: string) => {
+    mutationFn: async (restaurantId: string) => {
       const restaurant = restaurants.find((restaurant) => restaurant.place_id === restaurantId);
-      console.log(restaurant);
       if (!restaurant) {
         throw new Error("Restaurant not found");
       }
-      return saveRestaurant(restaurant);
+      return await convexSaveRestaurant(restaurant, userId);
     },
     onSuccess: (data, restaurantId: string) => {
-      queryClient.invalidateQueries({ queryKey: [`saved-${restaurantId}`] });
       const restaurant = restaurants.find((r) => r.place_id === restaurantId);
       Alert.alert(
         "Restaurant Saved! 🎉",
         `${restaurant?.name || "Restaurant"} has been added to your saved list.`,
         [{ text: "OK", style: "default" }]
       );
-      queryClient.invalidateQueries({ queryKey: ['restaurants-ids'] });
-      queryClient.invalidateQueries({ queryKey: ['saved-restaurants'] });
     },
     onError: (error) => {
       console.log(error);
@@ -97,16 +103,127 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
     }
   });
 
+  const removeRestaurantMutation = useMutation({
+    mutationFn: async (restaurantId: string) => {
+      return await convexRemoveRestaurant(restaurantId, userId);
+    },
+    onSuccess: (data, restaurantId: string) => {
+      const restaurant = savedRestaurants?.find((r) => r.place_id === restaurantId);
+      Alert.alert(
+        "Restaurant Removed",
+        `${restaurant?.name || "Restaurant"} has been removed from your saved list.`,
+        [{ text: "OK", style: "default" }]
+      );
+    },
+    onError: (error) => {
+      console.log(error);
+      console.error("Remove restaurant error:", error);
+      Alert.alert(
+        "Remove Failed",
+        "Something went wrong while removing the restaurant. Please try again.",
+        [{ text: "OK", style: "default" }]
+      );
+    }
+  });
+
+  const getAllSavedRestaurants = () => {
+    return savedRestaurants || [];
+  };
+
+  // Notes mutations
+  const createNoteMutation = useMutation({
+    mutationFn: async ({ restaurantPlaceId, title, content }: { restaurantPlaceId: string; title: string; content: string }) => {
+      return await convexCreateNote(restaurantPlaceId, title, content, userId);
+    },
+    onSuccess: () => {
+      Alert.alert("Success", "Note created successfully!");
+    },
+    onError: (error) => {
+      console.error("Create note error:", error);
+      Alert.alert("Error", "Failed to create note. Please try again.");
+    }
+  });
+
+  const updateNoteMutation = useMutation({
+    mutationFn: async ({ noteId, updates }: { noteId: string; updates: { title?: string; content?: string } }) => {
+      return await convexUpdateNote(noteId as any, updates);
+    },
+    onSuccess: () => {
+      Alert.alert("Success", "Note updated successfully!");
+    },
+    onError: (error) => {
+      console.error("Update note error:", error);
+      Alert.alert("Error", "Failed to update note. Please try again.");
+    }
+  });
+
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (noteId: string) => {
+      return await convexDeleteNote(noteId as any);
+    },
+    onSuccess: () => {
+      Alert.alert("Success", "Note deleted successfully!");
+    },
+    onError: (error) => {
+      console.error("Delete note error:", error);
+      Alert.alert("Error", "Failed to delete note. Please try again.");
+    }
+  });
+
+  // Notes helper functions
+  const handleCreateNote = async (restaurantPlaceId: string, title: string, content: string) => {
+    try {
+      await createNoteMutation.mutateAsync({ restaurantPlaceId, title, content });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  };
+
+  const handleUpdateNote = async (noteId: string, updates: { title?: string; content?: string }) => {
+    try {
+      await updateNoteMutation.mutateAsync({ noteId, updates });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    try {
+      await deleteNoteMutation.mutateAsync(noteId);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  };
+
+  const getNotesByRestaurant = (restaurantPlaceId: string) => {
+    // This will be handled by a separate hook in components that need it
+    // since useNotesByRestaurant is a hook and can't be called conditionally
+    return [];
+  };
+
   const value: RestaurantContextType = {
     restaurants,
-    savedRestaurants,
+    savedRestaurants: savedRestaurants || [],
     searchRestaurants: searchRestaurantsMutation.mutate,
     saveRestaurant: saveRestaurantMutation.mutate,
-    restaurantsIds: restaurantsIds,
+    removeRestaurant: removeRestaurantMutation.mutate,
+    getAllSavedRestaurants,
+    restaurantsIds: restaurantIds || [],
     isSearching: searchRestaurantsMutation.isPending,
     isSaving: saveRestaurantMutation.isPending,
-    isLoadingSaved: savedRestaurantsQuery.isLoading,
-    refetchSavedRestaurants: savedRestaurantsQuery.refetch,
+    isLoadingSaved: false, // Convex handles loading states automatically
+    isRemoving: removeRestaurantMutation.isPending,
+    // Notes functions
+    createNote: handleCreateNote,
+    updateNote: handleUpdateNote,
+    deleteNote: handleDeleteNote,
+    getNotesByRestaurant,
+    isCreatingNote: createNoteMutation.isPending,
+    isUpdatingNote: updateNoteMutation.isPending,
+    isDeletingNote: deleteNoteMutation.isPending,
   };
 
   return (

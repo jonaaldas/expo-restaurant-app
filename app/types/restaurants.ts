@@ -39,30 +39,30 @@ interface GoogleReviewsReview {
 }
 
 interface GoogleReviewsResult {
-  photos: GoogleReviewsPhoto[];
-  rating: number;
-  reviews: GoogleReviewsReview[];
+  photos?: GoogleReviewsPhoto[];
+  rating?: number;
+  reviews?: GoogleReviewsReview[];
 }
 
 interface CurrentOpeningHours {
-  open_now: boolean;
-  weekday_descriptions: string[];
-  next_close_time: string;
+  open_now?: boolean;
+  weekday_descriptions?: string[];
+  next_close_time?: string;
 }
 
 interface Restaurant {
   name: string;
-  rating: number;
-  photos: Photo[];
+  rating?: number;
+  photos?: Photo[];
   location: Location;
   place_id: string;
   would_try: boolean;
-  reviews: GoogleReviewsResult;
-  formatted_address: string;
-  price_level: string;
-  website_uri: string;
-  google_maps_uri: string;
-  current_opening_hours: CurrentOpeningHours;
+  reviews?: GoogleReviewsResult;
+  formatted_address?: string;
+  price_level?: string;
+  website_uri?: string;
+  google_maps_uri?: string;
+  current_opening_hours?: CurrentOpeningHours;
 }
 
 interface RestaurantId {

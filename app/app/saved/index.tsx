@@ -11,6 +11,7 @@ import {
   FlatList,
   Dimensions,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,13 +22,36 @@ import { Restaurant } from "@/types/restaurants";
 const screenWidth = Dimensions.get("window").width;
 
 export default function SavedRestaurantsList() {
-  const { savedRestaurants, isLoadingSaved, refetchSavedRestaurants } = useRestaurantContext();
+  const { 
+    savedRestaurants, 
+    isLoadingSaved, 
+    getAllSavedRestaurants,
+    removeRestaurant,
+    isRemoving 
+  } = useRestaurantContext();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await refetchSavedRestaurants();
+    // Get fresh data from Convex
+    const freshRestaurants = getAllSavedRestaurants();
+    console.log('Refreshed saved restaurants:', freshRestaurants.length);
     setRefreshing(false);
+  };
+
+  const handleRemoveRestaurant = (restaurant: Restaurant) => {
+    Alert.alert(
+      "Remove Restaurant",
+      `Are you sure you want to remove "${restaurant.name}" from your saved list?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () => removeRestaurant(restaurant.place_id),
+        },
+      ]
+    );
   };
 
   const renderRestaurantItem = ({ item }: { item: Restaurant }) => {
@@ -89,8 +113,21 @@ export default function SavedRestaurantsList() {
             </View>
           </View>
 
-          {/* Arrow Icon */}
-          <Ionicons name="chevron-forward" size={20} color="#ccc" />
+          {/* Delete and Arrow Icons */}
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity
+              onPress={() => handleRemoveRestaurant(item)}
+              style={styles.deleteButton}
+              disabled={isRemoving}
+            >
+              <Ionicons 
+                name="trash-outline" 
+                size={18} 
+                color={isRemoving ? "#ccc" : "#ff4444"} 
+              />
+            </TouchableOpacity>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -339,5 +376,15 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 12,
+  },
+  actionsContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  deleteButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: "#fff5f5",
   },
 });

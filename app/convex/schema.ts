@@ -3,6 +3,7 @@ import { v } from "convex/values";
 
 export default defineSchema({
   savedRestaurants: defineTable({
+    userId: v.optional(v.string()),
     name: v.string(),
     rating: v.float64(),
     photos: v.array(v.object({
@@ -13,41 +14,58 @@ export default defineSchema({
       lat: v.float64(),
       lng: v.float64(),
     }),
-    placeId: v.string(),
-    wouldTry: v.boolean(),
+    place_id: v.string(),
+    would_try: v.boolean(),
     reviews: v.object({
       photos: v.array(v.object({
         height: v.float64(),
-        htmlAttributions: v.array(v.string()),
-        photoReference: v.string(),
+        html_attributions: v.array(v.string()),
+        photo_reference: v.string(),
         width: v.float64(),
       })),
       rating: v.float64(),
       reviews: v.array(v.object({
-        authorName: v.string(),
-        authorUrl: v.string(),
+        author_name: v.string(),
+        author_url: v.string(),
         language: v.string(),
-        originalLanguage: v.string(),
-        profilePhotoUrl: v.string(),
+        original_language: v.string(),
+        profile_photo_url: v.string(),
         rating: v.float64(),
-        relativeTimeDescription: v.string(),
+        relative_time_description: v.string(),
         text: v.string(),
         time: v.float64(),
         translated: v.boolean(),
       })),
     }),
-    formattedAddress: v.string(),
-    priceLevel: v.string(),
-    websiteUri: v.string(),
-    googleMapsUri: v.string(),
-    currentOpeningHours: v.object({
-      openNow: v.boolean(),
-      weekdayDescriptions: v.array(v.string()),
-      nextCloseTime: v.string(),
+    formatted_address: v.string(),
+    price_level: v.string(),
+    website_uri: v.string(),
+    google_maps_uri: v.string(),
+    current_opening_hours: v.object({
+      open_now: v.boolean(),
+      weekday_descriptions: v.array(v.string()),
+      next_close_time: v.string(),
     }),
     savedAt: v.float64(),
   })
-  .index("by_place_id", ["placeId"])
+  .index("by_user_id", ["userId"])
+  .index("by_place_id", ["place_id"])
+  .index("by_user_place", ["userId", "place_id"])
   .index("by_saved_at", ["savedAt"])
-  .index("by_would_try", ["wouldTry"]),
+  .index("by_would_try", ["would_try"])
+  .index("by_user_would_try", ["userId", "would_try"]),
+
+  notes: defineTable({
+    userId: v.optional(v.string()),
+    restaurantPlaceId: v.string(),
+    title: v.string(),
+    content: v.string(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  })
+  .index("by_user_id", ["userId"])
+  .index("by_restaurant", ["restaurantPlaceId"])
+  .index("by_user_restaurant", ["userId", "restaurantPlaceId"])
+  .index("by_created_at", ["createdAt"])
+  .index("by_updated_at", ["updatedAt"]),
 });

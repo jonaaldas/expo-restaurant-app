@@ -3,6 +3,7 @@ import { v } from "convex/values";
 
 export const saveRestaurant = mutation({
   args: {
+    userId: v.optional(v.string()),
     name: v.string(),
     rating: v.float64(),
     photos: v.array(v.object({
@@ -13,43 +14,45 @@ export const saveRestaurant = mutation({
       lat: v.float64(),
       lng: v.float64(),
     }),
-    placeId: v.string(),
-    wouldTry: v.boolean(),
+    place_id: v.string(),
+    would_try: v.boolean(),
     reviews: v.object({
       photos: v.array(v.object({
         height: v.float64(),
-        htmlAttributions: v.array(v.string()),
-        photoReference: v.string(),
+        html_attributions: v.array(v.string()),
+        photo_reference: v.string(),
         width: v.float64(),
       })),
       rating: v.float64(),
       reviews: v.array(v.object({
-        authorName: v.string(),
-        authorUrl: v.string(),
+        author_name: v.string(),
+        author_url: v.string(),
         language: v.string(),
-        originalLanguage: v.string(),
-        profilePhotoUrl: v.string(),
+        original_language: v.string(),
+        profile_photo_url: v.string(),
         rating: v.float64(),
-        relativeTimeDescription: v.string(),
+        relative_time_description: v.string(),
         text: v.string(),
         time: v.float64(),
         translated: v.boolean(),
       })),
     }),
-    formattedAddress: v.string(),
-    priceLevel: v.string(),
-    websiteUri: v.string(),
-    googleMapsUri: v.string(),
-    currentOpeningHours: v.object({
-      openNow: v.boolean(),
-      weekdayDescriptions: v.array(v.string()),
-      nextCloseTime: v.string(),
+    formatted_address: v.string(),
+    price_level: v.string(),
+    website_uri: v.string(),
+    google_maps_uri: v.string(),
+    current_opening_hours: v.object({
+      open_now: v.boolean(),
+      weekday_descriptions: v.array(v.string()),
+      next_close_time: v.string(),
     }),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("savedRestaurants")
-      .withIndex("by_place_id", (q) => q.eq("placeId", args.placeId))
+      .withIndex("by_user_place", (q) => 
+        q.eq("userId", args.userId).eq("place_id", args.place_id)
+      )
       .first();
 
     if (existing) {
@@ -67,12 +70,15 @@ export const saveRestaurant = mutation({
 
 export const removeRestaurant = mutation({
   args: {
-    placeId: v.string(),
+    userId: v.optional(v.string()),
+    place_id: v.string(),
   },
   handler: async (ctx, args) => {
     const restaurant = await ctx.db
       .query("savedRestaurants")
-      .withIndex("by_place_id", (q) => q.eq("placeId", args.placeId))
+      .withIndex("by_user_place", (q) => 
+        q.eq("userId", args.userId).eq("place_id", args.place_id)
+      )
       .first();
 
     if (!restaurant) {
@@ -86,13 +92,16 @@ export const removeRestaurant = mutation({
 
 export const updateWouldTry = mutation({
   args: {
-    placeId: v.string(),
-    wouldTry: v.boolean(),
+    userId: v.optional(v.string()),
+    place_id: v.string(),
+    would_try: v.boolean(),
   },
   handler: async (ctx, args) => {
     const restaurant = await ctx.db
       .query("savedRestaurants")
-      .withIndex("by_place_id", (q) => q.eq("placeId", args.placeId))
+      .withIndex("by_user_place", (q) => 
+        q.eq("userId", args.userId).eq("place_id", args.place_id)
+      )
       .first();
 
     if (!restaurant) {
@@ -100,7 +109,7 @@ export const updateWouldTry = mutation({
     }
 
     await ctx.db.patch(restaurant._id, {
-      wouldTry: args.wouldTry,
+      would_try: args.would_try,
     });
 
     return { success: true };
@@ -108,7 +117,19 @@ export const updateWouldTry = mutation({
 });
 
 export const getSavedRestaurants = query({
-  handler: async (ctx) => {
+  args: {
+    userId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    console.log("getSavedRestaurants", args.userId);
+    if (args.userId) {
+      return await ctx.db
+        .query("savedRestaurants")
+        .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+        .order("desc")
+        .collect();
+    }
+    
     return await ctx.db
       .query("savedRestaurants")
       .withIndex("by_saved_at")
@@ -119,24 +140,37 @@ export const getSavedRestaurants = query({
 
 export const getRestaurantsByWouldTry = query({
   args: {
-    wouldTry: v.boolean(),
+    userId: v.optional(v.string()),
+    would_try: v.boolean(),
   },
   handler: async (ctx, args) => {
+    if (args.userId) {
+      return await ctx.db
+        .query("savedRestaurants")
+        .withIndex("by_user_would_try", (q) => 
+          q.eq("userId", args.userId).eq("would_try", args.would_try)
+        )
+        .collect();
+    }
+
     return await ctx.db
       .query("savedRestaurants")
-      .withIndex("by_would_try", (q) => q.eq("wouldTry", args.wouldTry))
+      .withIndex("by_would_try", (q) => q.eq("would_try", args.would_try))
       .collect();
   },
 });
 
 export const isRestaurantSaved = query({
   args: {
-    placeId: v.string(),
+    userId: v.optional(v.string()),
+    place_id: v.string(),
   },
   handler: async (ctx, args) => {
     const restaurant = await ctx.db
       .query("savedRestaurants")
-      .withIndex("by_place_id", (q) => q.eq("placeId", args.placeId))
+      .withIndex("by_user_place", (q) => 
+        q.eq("userId", args.userId).eq("place_id", args.place_id)
+      )
       .first();
 
     return !!restaurant;
@@ -145,12 +179,37 @@ export const isRestaurantSaved = query({
 
 export const getSavedRestaurant = query({
   args: {
-    placeId: v.string(),
+    userId: v.optional(v.string()),
+    place_id: v.string(),
   },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("savedRestaurants")
-      .withIndex("by_place_id", (q) => q.eq("placeId", args.placeId))
+      .withIndex("by_user_place", (q) => 
+        q.eq("userId", args.userId).eq("place_id", args.place_id)
+      )
       .first();
+  },
+});
+
+export const getAllRestaurantIds = query({
+  args: {
+    userId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    let restaurants;
+    
+    if (args.userId) {
+      restaurants = await ctx.db
+        .query("savedRestaurants")
+        .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+        .collect();
+    } else {
+      restaurants = await ctx.db
+        .query("savedRestaurants")
+        .collect();
+    }
+    
+    return restaurants.map(restaurant => restaurant.place_id);
   },
 });
