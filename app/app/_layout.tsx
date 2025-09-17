@@ -11,12 +11,13 @@ import { useEffect } from "react";
 import "react-native-reanimated";
 import { useColorScheme } from "@/components/useColorScheme";
 import { RestaurantProvider } from "@/app/useContext/restaurant";
-import {
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
 
-const queryClient = new QueryClient()
+const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
+  unsavedChangesWarning: false,
+});
+const queryClient = new QueryClient();
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
@@ -58,19 +59,21 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <QueryClientProvider client={queryClient}>
-        <RestaurantProvider>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              navigationBarHidden: true,
-            }}
-          >
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-          </Stack>
-        </RestaurantProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <ConvexProvider client={convex}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <QueryClientProvider client={queryClient}>
+          <RestaurantProvider>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                navigationBarHidden: true,
+              }}
+            >
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+            </Stack>
+          </RestaurantProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ConvexProvider>
   );
 }
