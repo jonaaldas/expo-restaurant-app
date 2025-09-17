@@ -21,6 +21,7 @@ import { Restaurant } from "@/types/restaurants";
 import { Ionicons } from "@expo/vector-icons";
 import { useRestaurantContext } from "@/app/useContext/restaurant";
 import Colors from "@/constants/Colors";
+import { RestaurantNotesManager } from "@/components/RestaurantNotesManager";
 
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
@@ -36,10 +37,6 @@ export default function SavedRestaurantDetail() {
   const headerHeight = screenHeight * 0.45;
   const { savedRestaurants } = useRestaurantContext();
   
-  // Note state management
-  const [note, setNote] = useState("");
-  const [isEditingNote, setIsEditingNote] = useState(false);
-  const [tempNote, setTempNote] = useState("");
 
   const restaurant = savedRestaurants.find(
     (res: Restaurant) => res.place_id === idParam
@@ -106,20 +103,6 @@ export default function SavedRestaurantDetail() {
     extrapolate: "clamp",
   });
 
-  const handleSaveNote = () => {
-    setNote(tempNote);
-    setIsEditingNote(false);
-  };
-
-  const handleCancelNote = () => {
-    setTempNote(note);
-    setIsEditingNote(false);
-  };
-
-  const handleStartEditNote = () => {
-    setTempNote(note);
-    setIsEditingNote(true);
-  };
 
   return (
     <KeyboardAvoidingView 
@@ -190,7 +173,7 @@ export default function SavedRestaurantDetail() {
           contentContainerStyle={{ paddingTop: headerHeight }}
         >
           <View style={styles.restaurantInfo}>
-            <Text style={styles.restaurantName}>{restaurant.name}</Text>
+            <Text style={styles.restaurantName}>{restaurant.name} 123</Text>
             <Text style={styles.cuisineType}>{restaurant.formatted_address}</Text>
             
             <View style={styles.statusContainer}>
@@ -202,53 +185,11 @@ export default function SavedRestaurantDetail() {
               </Text>
             </View>
 
-            {/* Notes Section - Prominent Feature */}
-            <View style={styles.notesContainer}>
-              <View style={styles.notesHeader}>
-                <Text style={styles.notesTitle}>My Notes</Text>
-                {!isEditingNote && (
-                  <TouchableOpacity onPress={handleStartEditNote}>
-                    <Ionicons name="create-outline" size={24} color={Colors.colors.orange} />
-                  </TouchableOpacity>
-                )}
-              </View>
-              
-              {isEditingNote ? (
-                <View style={styles.noteEditContainer}>
-                  <TextInput
-                    style={styles.noteInput}
-                    value={tempNote}
-                    onChangeText={setTempNote}
-                    placeholder="Add your thoughts about this restaurant..."
-                    multiline
-                    autoFocus
-                    maxLength={500}
-                  />
-                  <View style={styles.noteActions}>
-                    <TouchableOpacity
-                      style={styles.saveNoteButton}
-                      onPress={handleSaveNote}
-                    >
-                      <Text style={styles.saveNoteText}>Save</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.cancelNoteButton}
-                      onPress={handleCancelNote}
-                    >
-                      <Text style={styles.cancelNoteText}>Cancel</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : (
-                <TouchableOpacity onPress={handleStartEditNote}>
-                  {note ? (
-                    <Text style={styles.noteText}>{note}</Text>
-                  ) : (
-                    <Text style={styles.noNoteText}>Tap to add a note...</Text>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
+            {/* Notes Section */}
+            <RestaurantNotesManager 
+              restaurantPlaceId={restaurant.place_id} 
+              userId="1" 
+            />
 
             {/* Opening Hours */}
             {restaurant.current_opening_hours?.weekday_descriptions && (
@@ -462,72 +403,6 @@ const styles = StyleSheet.create({
   },
   closedText: {
     color: "#ff4444",
-  },
-  notesContainer: {
-    backgroundColor: "#f8f8f8",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-  },
-  notesHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  notesTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#000",
-  },
-  noteEditContainer: {
-    marginTop: 8,
-  },
-  noteInput: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 12,
-    fontSize: 15,
-    minHeight: 100,
-    textAlignVertical: "top",
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-  },
-  noteActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 12,
-    marginTop: 12,
-  },
-  saveNoteButton: {
-    backgroundColor: Colors.colors.orange,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  saveNoteText: {
-    color: "white",
-    fontWeight: "600",
-  },
-  cancelNoteButton: {
-    backgroundColor: "#f0f0f0",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  cancelNoteText: {
-    color: "#666",
-    fontWeight: "600",
-  },
-  noteText: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: "#333",
-  },
-  noNoteText: {
-    fontSize: 15,
-    color: "#999",
-    fontStyle: "italic",
   },
   openTimeContainer: {
     marginBottom: 24,

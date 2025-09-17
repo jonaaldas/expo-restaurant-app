@@ -7,7 +7,7 @@ export default function RestaurantCard({
 }: {
   restaurant: Restaurant;
 }) {
-  const imageSource = restaurant.photos[0]?.photoUri ? { uri: restaurant.photos[0].photoUri } : require('@/assets/images/res.jpg');
+  const imageSource = restaurant.photos?.[0]?.photoUri ? { uri: restaurant.photos[0].photoUri } : require('@/assets/images/res.jpg');
 
   return (
     <View style={styles.card}>
@@ -19,14 +19,16 @@ export default function RestaurantCard({
       
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.restaurantName}>{restaurant.name}</Text>
-          <View style={styles.ratingContainer}>
-            <Text style={styles.rating}>⭐ {restaurant.rating}</Text>
-          </View>
+          <Text style={styles.restaurantName}>{restaurant.name || 'Unknown Restaurant'}</Text>
+          {restaurant.rating && (
+            <View style={styles.ratingContainer}>
+              <Text style={styles.rating}>⭐ {restaurant.rating}</Text>
+            </View>
+          )}
         </View>
         
         <View style={styles.infoRow}>
-          <Text style={styles.address}>{restaurant.formatted_address}</Text>
+          <Text style={styles.address}>{restaurant.formatted_address || 'Address not available'}</Text>
         </View>
         
         <View style={styles.infoRow}>
@@ -48,7 +50,7 @@ export default function RestaurantCard({
               </Pressable>
             )
           }
-          {restaurant.reviews.reviews.length > 0 && (
+          {restaurant.reviews?.reviews && restaurant.reviews.reviews.length > 0 && (
             <Text style={styles.reviewCount}>
               {restaurant.reviews.reviews.length} reviews
             </Text>

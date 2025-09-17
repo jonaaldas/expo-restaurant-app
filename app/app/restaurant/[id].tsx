@@ -21,7 +21,6 @@ import { Restaurant } from "@/types/restaurants";
 import { Ionicons } from "@expo/vector-icons";
 import { useRestaurantContext } from "@/app/useContext/restaurant";
 import Colors from "@/constants/Colors";
-import { saveRestaurant } from "@/utils/restaurants";
 
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
@@ -43,7 +42,7 @@ export default function RestaurantDetail() {
 
   if (!restaurant) {
     return (
-      <SafeAreaView style={styles.conttainer}>
+      <SafeAreaView style={styles.container}>
         <Text>Restaurant not found</Text>
       </SafeAreaView>
     );
