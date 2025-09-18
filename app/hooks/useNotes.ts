@@ -67,3 +67,14 @@ export function useNote(noteId: Id<"notes">) {
 export function useRecentNotes(userId?: string, limit?: number) {
   return useQuery(api.notes.getRecentNotes, { userId, limit });
 }
+
+export function useSearchNotes(userId?: string, searchTerm?: string) {
+  return useQuery(
+    api.notes.searchNotes, 
+    searchTerm ? { userId, searchTerm } : "skip"
+  );
+}
+
+export function useNotesCount(userId?: string, restaurantPlaceId?: string) {
+  return useQuery(api.notes.getNotesCount, { userId, restaurantPlaceId });
+}

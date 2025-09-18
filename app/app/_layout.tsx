@@ -5,7 +5,7 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { Slot, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "react-native-reanimated";
@@ -13,7 +13,8 @@ import { useColorScheme } from "@/components/useColorScheme";
 import { RestaurantProvider } from "@/app/useContext/restaurant";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
-
+import { ClerkProvider, ClerkLoaded } from "@clerk/clerk-expo";
+import { tokenCache } from "@clerk/clerk-expo/token-cache";
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
 });
@@ -57,23 +58,38 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+  if (!publishableKey) {
+    throw new Error(
+      "Missing Publishable Key. Please set EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in your .env"
+    );
+  }
 
   return (
-    <ConvexProvider client={convex}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <QueryClientProvider client={queryClient}>
-          <RestaurantProvider>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                navigationBarHidden: true,
-              }}
-            >
-              <Stack.Screen name="index" options={{ headerShown: false }} />
-            </Stack>
-          </RestaurantProvider>
-        </QueryClientProvider>
-      </ThemeProvider>
-    </ConvexProvider>
+    <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
+      <ClerkLoaded>
+        <ConvexProvider client={convex}>
+          <ThemeProvider
+            value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+          >
+            <QueryClientProvider client={queryClient}>
+              <RestaurantProvider>
+                <Stack>
+                  <Stack.Screen 
+                    name="(app)" 
+                    options={{ headerShown: false }} 
+                  />
+                  <Stack.Screen 
+                    name="(auth)" 
+                    options={{ headerShown: false }} 
+                  />
+                </Stack>
+              </RestaurantProvider>
+            </QueryClientProvider>
+          </ThemeProvider>
+        </ConvexProvider>
+      </ClerkLoaded>
+    </ClerkProvider>
   );
 }
