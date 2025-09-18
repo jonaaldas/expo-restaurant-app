@@ -5,7 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "expo-router";
 import { Alert } from "react-native";
 import { useSavedRestaurants, useAllRestaurantIds } from "@/hooks/useSavedRestaurants";
-import { useNotes, useNotesByRestaurant } from "@/hooks/useNotes";
+import { useNotes, useNotesByRestaurant, useAllNotesByUser, useRecentNotes } from "@/hooks/useNotes";
+import { useUser } from "@clerk/clerk-expo";
 
 interface RestaurantContextType {
   restaurants: Restaurant[];
@@ -24,6 +25,8 @@ interface RestaurantContextType {
   updateNote: (noteId: string, updates: { title?: string; content?: string }) => Promise<{ success: boolean; error?: string }>;
   deleteNote: (noteId: string) => Promise<{ success: boolean; error?: string }>;
   getNotesByRestaurant: (restaurantPlaceId: string) => any[];
+  getAllUserNotes: () => any[];
+  getRecentNotes: (limit?: number) => any[];
   isCreatingNote: boolean;
   isUpdatingNote: boolean;
   isDeletingNote: boolean;
@@ -42,9 +45,13 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const pathname = usePathname();
-  
+  const { user } = useUser();
   // TODO: Get userId from Clerk when implemented
-  const userId = "1";
+  const userId = user?.id;
+
+  if (!userId) {
+    throw new Error("User ID not found");
+  }
   
   // Use Convex hooks for saved restaurants
   const { 
@@ -61,6 +68,10 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
     updateNote: convexUpdateNote, 
     deleteNote: convexDeleteNote 
   } = useNotes(userId);
+  
+  // Additional notes queries
+  const allUserNotes = useAllNotesByUser(userId);
+  const recentNotes = useRecentNotes(userId, 10);
 
   const searchRestaurantsMutation = useMutation({
     mutationFn: (params: SearchParams) => searchRestaurants(params),
@@ -201,7 +212,17 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
   const getNotesByRestaurant = (restaurantPlaceId: string) => {
     // This will be handled by a separate hook in components that need it
     // since useNotesByRestaurant is a hook and can't be called conditionally
+    // Components should use the useNotesByRestaurant hook directly
     return [];
+  };
+
+  const getAllUserNotes = () => {
+    return allUserNotes || [];
+  };
+
+  const getRecentUserNotes = (limit?: number) => {
+    // Already fetching 10 recent notes, but this allows components to filter further
+    return recentNotes ? recentNotes.slice(0, limit || 10) : [];
   };
 
   const value: RestaurantContextType = {
@@ -221,6 +242,8 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
     updateNote: handleUpdateNote,
     deleteNote: handleDeleteNote,
     getNotesByRestaurant,
+    getAllUserNotes,
+    getRecentNotes: getRecentUserNotes,
     isCreatingNote: createNoteMutation.isPending,
     isUpdatingNote: updateNoteMutation.isPending,
     isDeletingNote: deleteNoteMutation.isPending,
