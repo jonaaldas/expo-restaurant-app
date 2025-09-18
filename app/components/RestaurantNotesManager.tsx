@@ -5,19 +5,20 @@ import { useRestaurantContext } from '../app/useContext/restaurant';
 import { useNotesByRestaurant } from '../hooks/useNotes';
 import { Note } from '../types/convex';
 import Colors from '../constants/Colors';
+import { useUser } from '@clerk/clerk-expo';
 
 interface RestaurantNotesManagerProps {
   restaurantPlaceId: string;
-  userId?: string;
 }
 
 export const RestaurantNotesManager: React.FC<RestaurantNotesManagerProps> = ({ 
-  restaurantPlaceId, 
-  userId = "1" 
+  restaurantPlaceId,  
 }) => {
   const [content, setContent] = useState('');
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const { user } = useUser();
+  const userId = user?.id;
 
   const notes = useNotesByRestaurant(restaurantPlaceId, userId);
   const { 
@@ -37,7 +38,7 @@ export const RestaurantNotesManager: React.FC<RestaurantNotesManagerProps> = ({
 
     // Use first line or first 50 characters as title
     const title = content.trim().split('\n')[0].substring(0, 50);
-    const result = await createNote(restaurantPlaceId, title, content.trim());
+    const result = await createNote(restaurantPlaceId, title, content.trim(), userId);
     
     if (result.success) {
       setContent('');
@@ -55,7 +56,8 @@ export const RestaurantNotesManager: React.FC<RestaurantNotesManagerProps> = ({
     const title = content.trim().split('\n')[0].substring(0, 50);
     const result = await updateNote(editingNote._id, {
       title: title,
-      content: content.trim()
+      content: content.trim(),
+      userId: userId
     });
 
     if (result.success) {
@@ -74,7 +76,7 @@ export const RestaurantNotesManager: React.FC<RestaurantNotesManagerProps> = ({
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => deleteNote(note._id),
+          onPress: () => deleteNote(note._id, userId),
         },
       ]
     );
@@ -82,7 +84,7 @@ export const RestaurantNotesManager: React.FC<RestaurantNotesManagerProps> = ({
 
   const startEditing = (note: Note) => {
     setEditingNote(note);
-    setContent(note.content);
+    setContent(note.content || '');
     setIsExpanded(true);
   };
 
@@ -95,7 +97,7 @@ export const RestaurantNotesManager: React.FC<RestaurantNotesManagerProps> = ({
   const renderNote = ({ item }: { item: Note }) => (
     <View style={styles.noteCard}>
       <View style={styles.noteHeader}>
-        <Text style={styles.noteTitle}>{item.title}</Text>
+        <Text style={styles.noteTitle}>{item.title || ''}</Text>
         <View style={styles.noteActions}>
           <TouchableOpacity
             onPress={() => startEditing(item)}
@@ -113,7 +115,7 @@ export const RestaurantNotesManager: React.FC<RestaurantNotesManagerProps> = ({
           </TouchableOpacity>
         </View>
       </View>
-      <Text style={styles.noteContent}>{item.content}</Text>
+      {/* <Text style={styles.noteContent}>{item.content || ''}</Text> */}
       <Text style={styles.noteDate}>
         {new Date(item.createdAt).toLocaleDateString()} at {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </Text>

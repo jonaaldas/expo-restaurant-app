@@ -27,12 +27,14 @@ func GetPlacesByText(textQuery string, redisClient *redis.Client) ([]types.Resta
 
 	jsonBody, err := json.Marshal(requestBody)
 	if err != nil {
+		fmt.Println("Failed to marshal request body: %w", err)
 		return []types.Restaurant{}, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
 	url := "https://places.googleapis.com/v1/places:searchText"
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
 	if err != nil {
+		fmt.Println("Failed to create request: %w", err)
 		return []types.Restaurant{}, fmt.Errorf("failed to create request: %w", err)
 	}
 

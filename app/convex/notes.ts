@@ -24,11 +24,12 @@ export const createNote = mutation({
 export const updateNote = mutation({
   args: {
     noteId: v.id("notes"),
+    userId: v.optional(v.string()), // Add userId to args even if not used
     title: v.optional(v.string()),
     content: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { noteId, ...updates } = args;
+    const { noteId, userId, ...updates } = args; // Extract userId to exclude it from updates
     
     const updateData: any = {
       updatedAt: Date.now(),
@@ -124,5 +125,57 @@ export const getRecentNotes = query({
       .withIndex("by_updated_at")
       .order("desc")
       .take(limit);
+  },
+});
+
+export const searchNotes = query({
+  args: {
+    userId: v.optional(v.string()),
+    searchTerm: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (!args.userId) {
+      return [];
+    }
+
+    const allNotes = await ctx.db
+      .query("notes")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    // Filter notes by search term in title or content
+    const searchLower = args.searchTerm.toLowerCase();
+    return allNotes.filter(note => 
+      note.title.toLowerCase().includes(searchLower) ||
+      note.content.toLowerCase().includes(searchLower)
+    );
+  },
+});
+
+export const getNotesCount = query({
+  args: {
+    userId: v.optional(v.string()),
+    restaurantPlaceId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (args.restaurantPlaceId && args.userId) {
+      const notes = await ctx.db
+        .query("notes")
+        .withIndex("by_user_restaurant", (q) => 
+          q.eq("userId", args.userId).eq("restaurantPlaceId", args.restaurantPlaceId)
+        )
+        .collect();
+      return notes.length;
+    }
+    
+    if (args.userId) {
+      const notes = await ctx.db
+        .query("notes")
+        .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+        .collect();
+      return notes.length;
+    }
+
+    return 0;
   },
 });
