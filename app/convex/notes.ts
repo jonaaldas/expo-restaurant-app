@@ -24,11 +24,12 @@ export const createNote = mutation({
 export const updateNote = mutation({
   args: {
     noteId: v.id("notes"),
+    userId: v.optional(v.string()), // Add userId to args even if not used
     title: v.optional(v.string()),
     content: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { noteId, ...updates } = args;
+    const { noteId, userId, ...updates } = args; // Extract userId to exclude it from updates
     
     const updateData: any = {
       updatedAt: Date.now(),

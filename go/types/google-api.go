@@ -54,8 +54,7 @@ type GoogleReviewsReview struct {
 
 // New Google Places API v1 Text Search Types
 type TextSearchRequest struct {
-	TextQuery    string   `json:"textQuery"`
-	IncudedTypes []string `json:"includedTypes"`
+	TextQuery string `json:"textQuery"`
 }
 
 type TextSearchResponse struct {
