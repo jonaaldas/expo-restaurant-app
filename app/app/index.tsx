@@ -9,8 +9,14 @@ export default function Index() {
   }
 
   if (isSignedIn) {
+    let premium = false;
+    if (!premium) {
+      return <Redirect href="/(app)/subscribe" />;
+    }
     return <Redirect href="/(app)" />;
   }
+
+  //check if they are paid user
 
   return <Redirect href="/(auth)/sign-in" />;
 }
