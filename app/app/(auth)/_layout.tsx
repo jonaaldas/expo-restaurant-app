@@ -1,12 +1,7 @@
-import { Redirect, Stack } from 'expo-router'
-import { useAuth } from '@clerk/clerk-expo'
+import { Stack } from 'expo-router'
 
 export default function GuestLayout() {
-  const { isSignedIn } = useAuth()
-
-  if (isSignedIn) {
-    return <Redirect href={'/'} />
-  }
+  // Auth check removed - using hardcoded userId
 
   return (
     <Stack
