@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,29 @@ import {
   Pressable,
   SafeAreaView,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Colors from '@/constants/Colors';
-
+import Purchases, {LOG_LEVEL, CustomerInfo } from 'react-native-purchases'; 
 export default function SubscribePage() {
+  useEffect(() => {
+    Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+    if(Platform.OS === 'ios') {
+      Purchases.configure({
+        apiKey: process.env.EXPO_PUBLIC_PURCHASES_API_KEY!,
+      });
+    } else if (Platform.OS === 'android') {
+      Purchases.configure({
+        apiKey: process.env.EXPO_PUBLIC_PURCHASES_API_KEY!,
+      });
+    }
+  }, []);
+
+  const getCustomerInfo = async () => {
+    const customerInfo: CustomerInfo = await Purchases.getCustomerInfo();
+    console.log(customerInfo);
+  };
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
 
