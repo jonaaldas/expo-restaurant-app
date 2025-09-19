@@ -3,8 +3,10 @@ import { Link, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useState } from 'react'
 import Colors from '@/constants/Colors'
+import { useAuthActions } from "@convex-dev/auth/react";
 
 export default function Page() {
+   const { signIn } = useAuthActions();
   const router = useRouter()
   const [emailAddress, setEmailAddress] = useState('')
   const [password, setPassword] = useState('')
@@ -12,9 +14,19 @@ export default function Page() {
   const onSignInPress = async () => {
     // Simplified sign-in - just navigate to main app
     if (emailAddress && password) {
-      router.replace('/')
+      try {
+        await signIn("password", {
+          email: emailAddress,
+          password: password,
+          flow: "signIn",
+          redirectTo: '/(app)',
+        });
+        router.replace('/(app)');
+      } catch (error) {
+        alert('Sign in failed. Please check your credentials and try again.');
+      }
     } else {
-      alert('Please enter email and password')
+      alert('Please enter email and password');
     }
   }
 

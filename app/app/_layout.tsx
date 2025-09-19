@@ -13,9 +13,17 @@ import { useColorScheme } from "@/components/useColorScheme";
 import { RestaurantProvider } from "@/contexts/restaurant";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { Platform } from 'react-native'
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import * as SecureStore from "expo-secure-store";
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
 });
+const secureStorage = {
+  getItem: SecureStore.getItemAsync,
+  setItem: SecureStore.setItemAsync,
+  removeItem: SecureStore.deleteItemAsync,
+};
 const queryClient = new QueryClient();
 export {
   // Catch any errors thrown by the Layout component.
@@ -58,7 +66,11 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ConvexProvider client={convex}>
+    <ConvexAuthProvider client={convex} storage={
+        Platform.OS === "android" || Platform.OS === "ios"
+          ? secureStorage
+          : undefined
+      }>
       <ThemeProvider
         value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
       >
@@ -81,6 +93,6 @@ function RootLayoutNav() {
           </RestaurantProvider>
         </QueryClientProvider>
       </ThemeProvider>
-    </ConvexProvider>
+    </ConvexAuthProvider>
   );
 }

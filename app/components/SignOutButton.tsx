@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router'
 import { Text, TouchableOpacity, StyleSheet } from 'react-native'
-
+import { useAuthActions } from "@convex-dev/auth/react";
 export const SignOutButton = () => {
   const router = useRouter()
-  
+  const { signOut } = useAuthActions();
   const handleSignOut = async () => {
     // Simplified sign out - just navigate to auth
+    await signOut()
     router.replace('/(auth)/sign-in')
   }
   

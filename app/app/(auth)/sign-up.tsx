@@ -3,18 +3,26 @@ import { Text, TextInput, View, Pressable, StyleSheet, KeyboardAvoidingView, Pla
 import { Link, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Colors from '@/constants/Colors'
-
+import { useAuthActions } from "@convex-dev/auth/react";  
 export default function Page() {
   const router = useRouter()
-
+  const { signIn } = useAuthActions();
   const [emailAddress, setEmailAddress] = React.useState('')
   const [password, setPassword] = React.useState('')
 
   // Handle submission of sign-up form
   const onSignUpPress = async () => {
-    // Simplified sign-up - just navigate to main app
     if (emailAddress && password) {
-      router.replace('/')
+      try {
+        await signIn("password", {
+          email: emailAddress,
+          password: password,
+          flow: "signUp",
+        });
+        router.replace('/');
+      } catch (error) {
+        alert('Sign up failed. Please check your credentials and try again.');
+      }
     } else {
       alert('Please enter email and password')
     }
