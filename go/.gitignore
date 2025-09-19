@@ -1,0 +1,32 @@
+# Ignore compiled Python files
+*.pyc
+__pycache__/
+
+# Ignore build artifacts
+/build/
+/dist/
+target/
+
+# Ignore IDE-specific files
+.idea/
+.vscode/
+*.sublime-project
+*.swp
+
+# Ignore environment variables and sensitive files
+.env
+config.js
+secrets.json
+
+# Ignore log files
+*.log
+npm-debug.log*
+
+# Ignore Node.js modules
+node_modules/
+
+# Ignore macOS-specific files
+.DS_Store
+
+# Ignore Windows-specific files
+Thumbs.db

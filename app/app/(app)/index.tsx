@@ -11,16 +11,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Colors from "@/constants/Colors";
-import { useRestaurantContext } from "@/app/useContext/restaurant";
+import { useRestaurantContext } from "@/contexts/restaurant";
 import { useState } from "react";
 import { SearchParams } from "@/types/restaurants";
 import { router } from "expo-router";
-import { useUser } from "@clerk/clerk-expo";
 
 export default function Index() {
   const { searchRestaurants, isSearching, restaurantsIds } = useRestaurantContext();
   const [textInputValue, setTextInputValue] = useState("");
-  const { user } = useUser();
 
   const handleSettingsPress = () => {
     router.push('/(app)/settings');

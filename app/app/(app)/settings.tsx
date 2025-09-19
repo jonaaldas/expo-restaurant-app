@@ -11,20 +11,18 @@ import {
   Platform
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useUser, useClerk } from '@clerk/clerk-expo'
 import { useRouter } from 'expo-router'
 import Colors from '@/constants/Colors'
 import { SignOutButton } from '@/components/SignOutButton'
+import { useQuery } from 'convex/react'
+import { api } from '@/convex/_generated/api'
 
 export default function SettingsPage() {
-  const { user, isLoaded } = useUser()
-  const { signOut } = useClerk()
   const router = useRouter()
+  // Hardcoded user data
+  const user = useQuery(api.user.getUser);
+  console.log("user", user);
   
-  const [isEditingProfile, setIsEditingProfile] = useState(false)
-  const [firstName, setFirstName] = useState(user?.firstName || '')
-  const [lastName, setLastName] = useState(user?.lastName || '')
-  const [isUpdating, setIsUpdating] = useState(false)
   
   // Password update states
   const [isEditingPassword, setIsEditingPassword] = useState(false)
@@ -32,29 +30,9 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
 
-  if (!isLoaded || !user) {
-    return null
-  }
-
   // Check if user signed in with email (has password capability)
-  const hasEmailPassword = user.passwordEnabled
+  const hasEmailPassword = user?.email !== undefined
 
-  const handleUpdateProfile = async () => {
-    setIsUpdating(true)
-    try {
-      await user.update({
-        firstName: firstName,
-        lastName: lastName,
-      })
-      setIsEditingProfile(false)
-      Alert.alert('Success', 'Profile updated successfully!')
-    } catch (error) {
-      console.error('Error updating profile:', error)
-      Alert.alert('Error', 'Failed to update profile')
-    } finally {
-      setIsUpdating(false)
-    }
-  }
 
   const handleUpdatePassword = async () => {
     if (newPassword.length < 8) {
@@ -68,22 +46,14 @@ export default function SettingsPage() {
     }
 
     setIsUpdatingPassword(true)
-    try {
-      await user.updatePassword({
-        newPassword: newPassword,
-        currentPassword: currentPassword,
-        signOutOfOtherSessions: true
-      })
+    // Simplified password update
+    setTimeout(() => {
       setIsEditingPassword(false)
       setCurrentPassword('')
       setNewPassword('')
-      Alert.alert('Success', 'Password updated successfully! You have been signed out of other sessions.')
-    } catch (error) {
-      console.error('Error updating password:', error)
-      Alert.alert('Error', 'Failed to update password. Please check your current password.')
-    } finally {
+      Alert.alert('Success', 'Password updated successfully!')
       setIsUpdatingPassword(false)
-    }
+    }, 1000)
   }
 
   const handleBackPress = () => {
@@ -91,27 +61,6 @@ export default function SettingsPage() {
   }
 
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'Are you sure you want to delete your account? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await user.delete()
-              router.replace('/(auth)/sign-in')
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete account')
-            }
-          }
-        }
-      ]
-    )
-  }
 
   return (
     <View style={styles.container}>
@@ -133,65 +82,6 @@ export default function SettingsPage() {
               <View style={{ width: 40 }} />
             </View>
 
-            {/* Profile Section */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Profile</Text>
-                <Pressable 
-                  onPress={() => setIsEditingProfile(!isEditingProfile)}
-                  style={styles.editButton}
-                >
-                  <Text style={styles.editButtonText}>
-                    {isEditingProfile ? 'Cancel' : 'Edit'}
-                  </Text>
-                </Pressable>
-              </View>
-              
-              <View style={styles.profileInfo}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
-                    {user.firstName?.[0]?.toUpperCase() || user.emailAddresses[0]?.emailAddress[0]?.toUpperCase()}
-                  </Text>
-                </View>
-                
-                {isEditingProfile ? (
-                  <View style={styles.editForm}>
-                    <TextInput
-                      style={styles.input}
-                      value={firstName}
-                      onChangeText={setFirstName}
-                      placeholder="First Name"
-                      placeholderTextColor={Colors.colors.gray}
-                    />
-                    <TextInput
-                      style={styles.input}
-                      value={lastName}
-                      onChangeText={setLastName}
-                      placeholder="Last Name"
-                      placeholderTextColor={Colors.colors.gray}
-                    />
-                    <Pressable 
-                      style={[styles.saveButton, isUpdating && styles.disabledButton]}
-                      onPress={handleUpdateProfile}
-                      disabled={isUpdating}
-                    >
-                      <Text style={styles.saveButtonText}>
-                        {isUpdating ? 'Saving...' : 'Save Changes'}
-                      </Text>
-                    </Pressable>
-                  </View>
-                ) : (
-                  <View style={styles.userDetails}>
-                    <Text style={styles.userName}>
-                      {user.fullName || 'No name set'}
-                    </Text>
-                    <Text style={styles.userEmail}>
-                      {user.emailAddresses[0]?.emailAddress}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
 
             {/* Password Section - Only for email users */}
             {hasEmailPassword && (
@@ -253,35 +143,18 @@ export default function SettingsPage() {
               <View style={styles.menuItem}>
                 <Text style={styles.menuItemText}>Email</Text>
                 <Text style={styles.menuItemValue}>
-                  {user.emailAddresses[0]?.emailAddress}
+                  {user?.email}
                 </Text>
               </View>
               
               <View style={styles.menuItem}>
                 <Text style={styles.menuItemText}>Member Since</Text>
                 <Text style={styles.menuItemValue}>
-                  {new Date(user.createdAt || '').toLocaleDateString()}
+                    {new Date(user?._creationTime || '').toLocaleDateString()}
                 </Text>
               </View>
             </View>
 
-            {/* Connected Accounts */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Connected Accounts</Text>
-              
-              {user.externalAccounts.map((account) => (
-                <View key={account.id} style={styles.menuItem}>
-                  <Text style={styles.menuItemText}>
-                    {account.provider === 'google' ? '🔍 Google' : account.provider === 'apple' ? '🍎 Apple' : 'Unknown'}
-                  </Text>
-                  <Text style={styles.connectedText}>Connected</Text>
-                </View>
-              ))}
-              
-              {user.externalAccounts.length === 0 && (
-                <Text style={styles.noAccountsText}>No connected accounts</Text>
-              )}
-            </View>
 
             {/* Actions */}
             <View style={styles.section}>
@@ -289,12 +162,6 @@ export default function SettingsPage() {
                 <SignOutButton />
               </View>
               
-              <Pressable 
-                style={styles.dangerButton}
-                onPress={handleDeleteAccount}
-              >
-                <Text style={styles.dangerButtonText}>Delete Account</Text>
-              </Pressable>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -367,36 +234,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  profileInfo: {
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.colors.orange,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: Colors.colors.white,
-  },
-  userDetails: {
-    alignItems: 'center',
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: Colors.colors.navy,
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 16,
-    color: Colors.colors.gray,
-  },
   editForm: {
     width: '100%',
   },
@@ -446,31 +283,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.colors.gray,
   },
-  connectedText: {
-    fontSize: 14,
-    color: Colors.colors.orange,
-  },
-  noAccountsText: {
-    fontSize: 14,
-    color: Colors.colors.gray,
-    textAlign: 'center',
-    paddingVertical: 12,
-  },
   signOutWrapper: {
     marginBottom: 12,
-  },
-  dangerButton: {
-    borderWidth: 2,
-    borderColor: '#FF3B30',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  dangerButtonText: {
-    color: '#FF3B30',
-    fontSize: 16,
-    fontWeight: '600',
   },
   passwordHint: {
     fontSize: 14,

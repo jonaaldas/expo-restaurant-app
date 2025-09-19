@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useRestaurantContext } from "@/app/useContext/restaurant";
+import { useRestaurantContext } from "@/contexts/restaurant";
 import Colors from "@/constants/Colors";
 import { Restaurant } from "@/types/restaurants";
 

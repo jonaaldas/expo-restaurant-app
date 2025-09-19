@@ -1,18 +1,13 @@
-import { useClerk } from '@clerk/clerk-expo'
 import { useRouter } from 'expo-router'
 import { Text, TouchableOpacity, StyleSheet } from 'react-native'
-
+import { useAuthActions } from "@convex-dev/auth/react";
 export const SignOutButton = () => {
-  const { signOut } = useClerk()
   const router = useRouter()
-  
+  const { signOut } = useAuthActions();
   const handleSignOut = async () => {
-    try {
-      await signOut()
-      router.replace('/(app)')
-    } catch (err) {
-      console.error(JSON.stringify(err, null, 2))
-    }
+    // Simplified sign out - just navigate to auth
+    await signOut()
+    router.replace('/(auth)/sign-in')
   }
   
   return (

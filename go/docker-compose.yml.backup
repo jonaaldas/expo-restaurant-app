@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  restaurant-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - PLACES_API_KEY=${PLACES_API_KEY}
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - traefik-proxy
+      - restaurant-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.places-api.rule=Host(`places-api.aldas.dev`)"
+      - "traefik.http.routers.places-api.entrypoints=websecure"
+      - "traefik.http.routers.places-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.places-api.loadbalancer.server.port=3000"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: restaurant_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      - restaurant-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - restaurant-network
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  traefik-proxy:
+    external: true
+  restaurant-network:
+    driver: bridge

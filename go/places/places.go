@@ -12,10 +12,9 @@ import (
 	"time"
 
 	"github.com/jonaaldas/go-restaurant-crud/types"
-	"github.com/redis/go-redis/v9"
 )
 
-func GetPlacesByText(textQuery string, redisClient *redis.Client) ([]types.Restaurant, error) {
+func GetPlacesByText(textQuery string) ([]types.Restaurant, error) {
 	apiKey := os.Getenv("PLACES_API_KEY")
 	if apiKey == "" {
 		return []types.Restaurant{}, fmt.Errorf("PLACES_API_KEY environment variable is not set")

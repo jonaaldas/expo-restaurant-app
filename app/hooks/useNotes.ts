@@ -2,7 +2,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
 
-export function useNotes(userId?: string) {
+export function useNotes() {
   const createNote = useMutation(api.notes.createNote);
   const updateNote = useMutation(api.notes.updateNote);
   const deleteNote = useMutation(api.notes.deleteNote);
@@ -10,11 +10,10 @@ export function useNotes(userId?: string) {
   const handleCreateNote = async (
     restaurantPlaceId: string,
     title: string,
-    content: string,
-    userId?: string
+    content: string,  
   ) => {
     try {
-      await createNote({ restaurantPlaceId, title, content, userId });
+      await createNote({ restaurantPlaceId, title, content });
       return { success: true };
     } catch (error) {
       console.error("Failed to create note:", error);
@@ -52,29 +51,29 @@ export function useNotes(userId?: string) {
   };
 }
 
-export function useNotesByRestaurant(restaurantPlaceId: string, userId?: string) {
-  return useQuery(api.notes.getNotesByRestaurant, { restaurantPlaceId, userId });
+export function useNotesByRestaurant(restaurantPlaceId: string) {
+  return useQuery(api.notes.getNotesByRestaurant, { restaurantPlaceId });
 }
 
-export function useAllNotesByUser(userId?: string) {
-  return useQuery(api.notes.getAllNotesByUser, { userId });
+export function useAllNotesByUser() {
+  return useQuery(api.notes.getAllNotesByUser);
 }
 
 export function useNote(noteId: Id<"notes">) {
   return useQuery(api.notes.getNote, { noteId });
 }
 
-export function useRecentNotes(userId?: string, limit?: number) {
-  return useQuery(api.notes.getRecentNotes, { userId, limit });
+export function useRecentNotes(limit?: number) {
+  return useQuery(api.notes.getRecentNotes, { limit });
 }
 
-export function useSearchNotes(userId?: string, searchTerm?: string) {
+export function useSearchNotes(searchTerm?: string) {
   return useQuery(
     api.notes.searchNotes, 
-    searchTerm ? { userId, searchTerm } : "skip"
+    searchTerm ? { searchTerm } : "skip"
   );
 }
 
-export function useNotesCount(userId?: string, restaurantPlaceId?: string) {
-  return useQuery(api.notes.getNotesCount, { userId, restaurantPlaceId });
+export function useNotesCount(restaurantPlaceId?: string) {
+  return useQuery(api.notes.getNotesCount, { restaurantPlaceId });
 }

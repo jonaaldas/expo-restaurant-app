@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRestaurantContext } from '../app/useContext/restaurant';
+import { useRestaurantContext } from '../contexts/restaurant';
 import { useNotesByRestaurant } from '../hooks/useNotes';
 import { Note } from '../types/convex';
 import Colors from '../constants/Colors';
-import { useUser } from '@clerk/clerk-expo';
-
 interface RestaurantNotesManagerProps {
   restaurantPlaceId: string;
 }
@@ -17,8 +15,7 @@ export const RestaurantNotesManager: React.FC<RestaurantNotesManagerProps> = ({
   const [content, setContent] = useState('');
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const { user } = useUser();
-  const userId = user?.id;
+  const userId = "1";
 
   const notes = useNotesByRestaurant(restaurantPlaceId, userId);
   const { 
@@ -38,7 +35,7 @@ export const RestaurantNotesManager: React.FC<RestaurantNotesManagerProps> = ({
 
     // Use first line or first 50 characters as title
     const title = content.trim().split('\n')[0].substring(0, 50);
-    const result = await createNote(restaurantPlaceId, title, content.trim(), userId);
+    const result = await createNote(restaurantPlaceId, title, content.trim());
     
     if (result.success) {
       setContent('');
@@ -56,8 +53,7 @@ export const RestaurantNotesManager: React.FC<RestaurantNotesManagerProps> = ({
     const title = content.trim().split('\n')[0].substring(0, 50);
     const result = await updateNote(editingNote._id, {
       title: title,
-      content: content.trim(),
-      userId: userId
+      content: content.trim()
     });
 
     if (result.success) {
@@ -76,7 +72,7 @@ export const RestaurantNotesManager: React.FC<RestaurantNotesManagerProps> = ({
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => deleteNote(note._id, userId),
+          onPress: () => deleteNote(note._id),
         },
       ]
     );

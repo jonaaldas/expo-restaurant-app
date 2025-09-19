@@ -11,7 +11,7 @@ import RestaurantCard from "@/components/RestaurantCard";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRestaurantContext } from "@/app/useContext/restaurant";
+import { useRestaurantContext } from "@/contexts/restaurant";
 import Colors from "@/constants/Colors";
 import { TextInput } from "react-native";
 import { useState } from "react";

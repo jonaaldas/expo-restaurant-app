@@ -1,3 +1,4 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -24,12 +25,15 @@ export const createNote = mutation({
 export const updateNote = mutation({
   args: {
     noteId: v.id("notes"),
-    userId: v.optional(v.string()), // Add userId to args even if not used
     title: v.optional(v.string()),
     content: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { noteId, userId, ...updates } = args; // Extract userId to exclude it from updates
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
+    const { noteId, ...updates } = args; // Extract userId to exclude it from updates
     
     const updateData: any = {
       updatedAt: Date.now(),
@@ -56,15 +60,18 @@ export const deleteNote = mutation({
 
 export const getNotesByRestaurant = query({
   args: {
-    userId: v.optional(v.string()),
     restaurantPlaceId: v.string(),
   },
   handler: async (ctx, args) => {
-    if (args.userId) {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
+    if (userId) {
       return await ctx.db
         .query("notes")
         .withIndex("by_user_restaurant", (q) => 
-          q.eq("userId", args.userId).eq("restaurantPlaceId", args.restaurantPlaceId)
+          q.eq("userId", userId).eq("restaurantPlaceId", args.restaurantPlaceId)
         )
         .order("desc")
         .collect();
@@ -79,17 +86,16 @@ export const getNotesByRestaurant = query({
 });
 
 export const getAllNotesByUser = query({
-  args: {
-    userId: v.optional(v.string()),
-  },
+  args: {},
   handler: async (ctx, args) => {
-    if (!args.userId) {
-      return [];
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
     }
 
     return await ctx.db
       .query("notes")
-      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))
       .order("desc")
       .collect();
   },
@@ -106,16 +112,19 @@ export const getNote = query({
 
 export const getRecentNotes = query({
   args: {
-    userId: v.optional(v.string()),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const limit = args.limit || 10;
     
-    if (args.userId) {
+    const userId = await getAuthUserId(ctx);
+      if (!userId) {
+      return null;
+    }
+    if (userId) {
       return await ctx.db
         .query("notes")
-        .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+        .withIndex("by_user_id", (q) => q.eq("userId", userId))
         .order("desc")
         .take(limit);
     }
@@ -130,17 +139,20 @@ export const getRecentNotes = query({
 
 export const searchNotes = query({
   args: {
-    userId: v.optional(v.string()),
     searchTerm: v.string(),
   },
   handler: async (ctx, args) => {
-    if (!args.userId) {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
+    if (!userId) {
       return [];
     }
 
     const allNotes = await ctx.db
       .query("notes")
-      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))
       .collect();
 
     // Filter notes by search term in title or content
@@ -154,24 +166,27 @@ export const searchNotes = query({
 
 export const getNotesCount = query({
   args: {
-    userId: v.optional(v.string()),
     restaurantPlaceId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    if (args.restaurantPlaceId && args.userId) {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+          return null;
+    }
+    if (args.restaurantPlaceId && userId) {
       const notes = await ctx.db
         .query("notes")
         .withIndex("by_user_restaurant", (q) => 
-          q.eq("userId", args.userId).eq("restaurantPlaceId", args.restaurantPlaceId)
+          q.eq("userId", userId).eq("restaurantPlaceId", args.restaurantPlaceId || "")
         )
         .collect();
       return notes.length;
     }
     
-    if (args.userId) {
+    if (userId) {
       const notes = await ctx.db
         .query("notes")
-        .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+        .withIndex("by_user_id", (q) => q.eq("userId", userId))
         .collect();
       return notes.length;
     }

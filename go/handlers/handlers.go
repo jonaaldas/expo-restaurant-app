@@ -5,26 +5,19 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jonaaldas/go-restaurant-crud/places"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type Handlers struct {
-	MongoCollection                *mongo.Collection
-	MongoSavedRestaurantCollection *mongo.Collection
-}
+type Handlers struct{}
 
-func NewHandlers(mongoCollection *mongo.Collection, mongoSavedRestaurantCollection *mongo.Collection) *Handlers {
-	return &Handlers{
-		MongoCollection:                mongoCollection,
-		MongoSavedRestaurantCollection: mongoSavedRestaurantCollection,
-	}
+func NewHandlers() *Handlers {
+	return &Handlers{}
 }
 
 // SearchRestaurants handles GET /api/search
 func (h *Handlers) SearchRestaurants(c *fiber.Ctx) error {
 	query := c.Query("query")
 
-	restaurants, err := places.GetPlacesByText(query, nil)
+	restaurants, err := places.GetPlacesByText(query)
 
 	if err != nil {
 		fmt.Print(err)
