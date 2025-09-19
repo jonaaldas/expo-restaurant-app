@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-
+import { getAuthUserId } from "@convex-dev/auth/server";
 export const saveRestaurant = mutation({
   args: {
     userId: v.optional(v.string()),
@@ -48,10 +48,15 @@ export const saveRestaurant = mutation({
     }),
   },
   handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) {
+          return null;
+        }
+    args.userId = userId;
     const existing = await ctx.db
       .query("savedRestaurants")
       .withIndex("by_user_place", (q) => 
-        q.eq("userId", args.userId).eq("place_id", args.place_id)
+        q.eq("userId", userId).eq("place_id", args.place_id)
       )
       .first();
 
@@ -70,14 +75,17 @@ export const saveRestaurant = mutation({
 
 export const removeRestaurant = mutation({
   args: {
-    userId: v.optional(v.string()),
     place_id: v.string(),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
     const restaurant = await ctx.db
       .query("savedRestaurants")
       .withIndex("by_user_place", (q) => 
-        q.eq("userId", args.userId).eq("place_id", args.place_id)
+        q.eq("userId", userId).eq("place_id", args.place_id)
       )
       .first();
 
@@ -92,15 +100,18 @@ export const removeRestaurant = mutation({
 
 export const updateWouldTry = mutation({
   args: {
-    userId: v.optional(v.string()),
     place_id: v.string(),
     would_try: v.boolean(),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
     const restaurant = await ctx.db
       .query("savedRestaurants")
       .withIndex("by_user_place", (q) => 
-        q.eq("userId", args.userId).eq("place_id", args.place_id)
+        q.eq("userId", userId).eq("place_id", args.place_id)
       )
       .first();
 
@@ -118,14 +129,16 @@ export const updateWouldTry = mutation({
 
 export const getSavedRestaurants = query({
   args: {
-    userId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    console.log("getSavedRestaurants", args.userId);
-    if (args.userId) {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
+    if (userId) {
       return await ctx.db
         .query("savedRestaurants")
-        .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+        .withIndex("by_user_id", (q) => q.eq("userId", userId))
         .order("desc")
         .collect();
     }
@@ -140,15 +153,18 @@ export const getSavedRestaurants = query({
 
 export const getRestaurantsByWouldTry = query({
   args: {
-    userId: v.optional(v.string()),
     would_try: v.boolean(),
   },
   handler: async (ctx, args) => {
-    if (args.userId) {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
+    if (userId) {
       return await ctx.db
         .query("savedRestaurants")
         .withIndex("by_user_would_try", (q) => 
-          q.eq("userId", args.userId).eq("would_try", args.would_try)
+          q.eq("userId", userId).eq("would_try", args.would_try)
         )
         .collect();
     }
@@ -162,14 +178,17 @@ export const getRestaurantsByWouldTry = query({
 
 export const isRestaurantSaved = query({
   args: {
-    userId: v.optional(v.string()),
     place_id: v.string(),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
     const restaurant = await ctx.db
       .query("savedRestaurants")
       .withIndex("by_user_place", (q) => 
-        q.eq("userId", args.userId).eq("place_id", args.place_id)
+        q.eq("userId", userId).eq("place_id", args.place_id)
       )
       .first();
 
@@ -179,14 +198,17 @@ export const isRestaurantSaved = query({
 
 export const getSavedRestaurant = query({
   args: {
-    userId: v.optional(v.string()),
     place_id: v.string(),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
     return await ctx.db
       .query("savedRestaurants")
       .withIndex("by_user_place", (q) => 
-        q.eq("userId", args.userId).eq("place_id", args.place_id)
+        q.eq("userId", userId).eq("place_id", args.place_id)
       )
       .first();
   },
@@ -194,15 +216,18 @@ export const getSavedRestaurant = query({
 
 export const getAllRestaurantIds = query({
   args: {
-    userId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
     let restaurants;
     
-    if (args.userId) {
+    if (userId) {
       restaurants = await ctx.db
         .query("savedRestaurants")
-        .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+        .withIndex("by_user_id", (q) => q.eq("userId", userId))
         .collect();
     } else {
       restaurants = await ctx.db

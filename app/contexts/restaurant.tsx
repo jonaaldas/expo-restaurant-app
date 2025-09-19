@@ -44,27 +44,26 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const pathname = usePathname();
-  const userId = "1";
   
   // Use Convex hooks for saved restaurants
   const { 
     savedRestaurants, 
     saveRestaurant: convexSaveRestaurant, 
     removeRestaurant: convexRemoveRestaurant 
-  } = useSavedRestaurants(userId);
+  } = useSavedRestaurants();
   
-  const restaurantIds = useAllRestaurantIds(userId);
+  const restaurantIds = useAllRestaurantIds();
 
   // Use Convex hooks for notes
   const { 
     createNote: convexCreateNote, 
     updateNote: convexUpdateNote, 
     deleteNote: convexDeleteNote 
-  } = useNotes(userId);
+  } = useNotes();
   
   // Additional notes queries
-  const allUserNotes = useAllNotesByUser(userId);
-  const recentNotes = useRecentNotes(userId, 10);
+  const allUserNotes = useAllNotesByUser();
+  const recentNotes = useRecentNotes(10);
 
   const searchRestaurantsMutation = useMutation({
     mutationFn: (params: SearchParams) => searchRestaurants(params),
@@ -86,7 +85,7 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
       if (!restaurant) {
         throw new Error("Restaurant not found");
       }
-      return await convexSaveRestaurant(restaurant, userId);
+      return await convexSaveRestaurant(restaurant);
     },
     onSuccess: (data, restaurantId: string) => {
       const restaurant = restaurants.find((r) => r.place_id === restaurantId);
@@ -109,7 +108,7 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
 
   const removeRestaurantMutation = useMutation({
     mutationFn: async (restaurantId: string) => {
-      return await convexRemoveRestaurant(restaurantId, userId);
+      return await convexRemoveRestaurant(restaurantId);
     },
     onSuccess: (data, restaurantId: string) => {
       const restaurant = savedRestaurants?.find((r) => r.place_id === restaurantId);
@@ -137,7 +136,7 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
   // Notes mutations
   const createNoteMutation = useMutation({
     mutationFn: async ({ restaurantPlaceId, title, content }: { restaurantPlaceId: string; title: string; content: string }) => {
-      return await convexCreateNote(restaurantPlaceId, title, content, userId);
+      return await convexCreateNote(restaurantPlaceId, title, content);
     },
     onSuccess: () => {
       Alert.alert("Success", "Note created successfully!");
@@ -151,7 +150,7 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
   const updateNoteMutation = useMutation({
     mutationFn: async ({ noteId, updates }: { noteId: string; updates: { title?: string; content?: string } }) => {
       return await convexUpdateNote(noteId as any, updates);
-    },
+      },
     onSuccess: () => {
       Alert.alert("Success", "Note updated successfully!");
     },

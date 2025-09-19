@@ -1,7 +1,8 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-
+import { authTables } from "@convex-dev/auth/server";
 export default defineSchema({
+  ...authTables,
   savedRestaurants: defineTable({
     userId: v.optional(v.string()),
     name: v.string(),

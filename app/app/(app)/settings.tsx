@@ -14,24 +14,17 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import Colors from '@/constants/Colors'
 import { SignOutButton } from '@/components/SignOutButton'
+import { useQuery } from 'convex/react'
+import { api } from '@/convex/_generated/api'
 
 export default function SettingsPage() {
   const router = useRouter()
-  
   // Hardcoded user data
-  const user = {
-    id: '1',
-    firstName: 'Test',
-    lastName: 'User',
-    emailAddresses: [{ emailAddress: 'testuser@example.com' }],
-    passwordEnabled: true,
-    createdAt: new Date().toISOString(),
-    externalAccounts: []
-  }
+  const user = useQuery(api.user.getUser);
+  console.log("user", user);
   
   const [isEditingProfile, setIsEditingProfile] = useState(false)
-  const [firstName, setFirstName] = useState(user.firstName || '')
-  const [lastName, setLastName] = useState(user.lastName || '')
+  const [firstName, setFirstName] = useState(user?.name || '')
   const [isUpdating, setIsUpdating] = useState(false)
   
   // Password update states
@@ -41,7 +34,7 @@ export default function SettingsPage() {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
 
   // Check if user signed in with email (has password capability)
-  const hasEmailPassword = user.passwordEnabled
+  const hasEmailPassword = user?.email !== undefined
 
   const handleUpdateProfile = async () => {
     setIsUpdating(true)
@@ -87,7 +80,7 @@ export default function SettingsPage() {
   }
 
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     Alert.alert(
       'Delete Account',
       'Are you sure you want to delete your account? This action cannot be undone.',
@@ -96,8 +89,7 @@ export default function SettingsPage() {
         { 
           text: 'Delete', 
           style: 'destructive',
-          onPress: () => {
-            // Simplified account deletion
+          onPress: async () => {
             router.replace('/(auth)/sign-in')
           }
         }
@@ -142,7 +134,7 @@ export default function SettingsPage() {
               <View style={styles.profileInfo}>
                 <View style={styles.avatar}>
                   <Text style={styles.avatarText}>
-                    {user.firstName?.[0]?.toUpperCase() || user.emailAddresses[0]?.emailAddress[0]?.toUpperCase()}
+                    {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase()}
                   </Text>
                 </View>
                 
@@ -157,8 +149,8 @@ export default function SettingsPage() {
                     />
                     <TextInput
                       style={styles.input}
-                      value={lastName}
-                      onChangeText={setLastName}
+                      value={user?.name || ''}
+                      onChangeText={setFirstName}
                       placeholder="Last Name"
                       placeholderTextColor={Colors.colors.gray}
                     />
@@ -175,10 +167,10 @@ export default function SettingsPage() {
                 ) : (
                   <View style={styles.userDetails}>
                     <Text style={styles.userName}>
-                      {`${user.firstName} ${user.lastName}` || 'No name set'}
+                      {`${user?.name}` || 'No name set'}
                     </Text>
                     <Text style={styles.userEmail}>
-                      {user.emailAddresses[0]?.emailAddress}
+                      {user?.email}
                     </Text>
                   </View>
                 )}
@@ -245,14 +237,14 @@ export default function SettingsPage() {
               <View style={styles.menuItem}>
                 <Text style={styles.menuItemText}>Email</Text>
                 <Text style={styles.menuItemValue}>
-                  {user.emailAddresses[0]?.emailAddress}
+                  {user?.email}
                 </Text>
               </View>
               
               <View style={styles.menuItem}>
                 <Text style={styles.menuItemText}>Member Since</Text>
                 <Text style={styles.menuItemValue}>
-                  {new Date(user.createdAt || '').toLocaleDateString()}
+                    {new Date(user?._creationTime || '').toLocaleDateString()}
                 </Text>
               </View>
             </View>
