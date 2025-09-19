@@ -11,7 +11,7 @@ services:
       - .env
     restart: unless-stopped
     networks:
-      - dokploy-network
+      - traefik-proxy
       - restaurant-network
     labels:
       - "traefik.enable=true"
@@ -19,7 +19,6 @@ services:
       - "traefik.http.routers.places-api.entrypoints=websecure"
       - "traefik.http.routers.places-api.tls.certresolver=letsencrypt"
       - "traefik.http.services.places-api.loadbalancer.server.port=3000"
-      - "traefik.docker.network=dokploy-network"
 
   postgres:
     image: postgres:16-alpine
@@ -52,7 +51,7 @@ volumes:
   redis_data:
 
 networks:
-  dokploy-network:
+  traefik-proxy:
     external: true
   restaurant-network:
     driver: bridge
