@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "expo-router";
 import { Alert } from "react-native";
 import { useSavedRestaurants, useAllRestaurantIds } from "@/hooks/useSavedRestaurants";
 import { useNotes, useNotesByRestaurant, useAllNotesByUser, useRecentNotes } from "@/hooks/useNotes";
-import { useUser } from "@clerk/clerk-expo";
 
 interface RestaurantContextType {
   restaurants: Restaurant[];
@@ -45,13 +44,7 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const pathname = usePathname();
-  const { user } = useUser();
-  // TODO: Get userId from Clerk when implemented
-  const userId = user?.id;
-
-  if (!userId) {
-    throw new Error("User ID not found");
-  }
+  const userId = "1";
   
   // Use Convex hooks for saved restaurants
   const { 

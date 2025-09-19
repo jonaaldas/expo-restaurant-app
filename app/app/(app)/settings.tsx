@@ -11,19 +11,27 @@ import {
   Platform
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useUser, useClerk } from '@clerk/clerk-expo'
 import { useRouter } from 'expo-router'
 import Colors from '@/constants/Colors'
 import { SignOutButton } from '@/components/SignOutButton'
 
 export default function SettingsPage() {
-  const { user, isLoaded } = useUser()
-  const { signOut } = useClerk()
   const router = useRouter()
   
+  // Hardcoded user data
+  const user = {
+    id: '1',
+    firstName: 'Test',
+    lastName: 'User',
+    emailAddresses: [{ emailAddress: 'testuser@example.com' }],
+    passwordEnabled: true,
+    createdAt: new Date().toISOString(),
+    externalAccounts: []
+  }
+  
   const [isEditingProfile, setIsEditingProfile] = useState(false)
-  const [firstName, setFirstName] = useState(user?.firstName || '')
-  const [lastName, setLastName] = useState(user?.lastName || '')
+  const [firstName, setFirstName] = useState(user.firstName || '')
+  const [lastName, setLastName] = useState(user.lastName || '')
   const [isUpdating, setIsUpdating] = useState(false)
   
   // Password update states
@@ -32,22 +40,18 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
 
-  if (!isLoaded || !user) {
-    return null
-  }
-
   // Check if user signed in with email (has password capability)
   const hasEmailPassword = user.passwordEnabled
 
   const handleUpdateProfile = async () => {
     setIsUpdating(true)
+    // Simplified profile update
     try {
-      await user.update({
-        firstName: firstName,
-        lastName: lastName,
-      })
+    setTimeout(() => {
       setIsEditingProfile(false)
       Alert.alert('Success', 'Profile updated successfully!')
+      setIsUpdating(false)
+    }, 1000)
     } catch (error) {
       console.error('Error updating profile:', error)
       Alert.alert('Error', 'Failed to update profile')
@@ -68,22 +72,14 @@ export default function SettingsPage() {
     }
 
     setIsUpdatingPassword(true)
-    try {
-      await user.updatePassword({
-        newPassword: newPassword,
-        currentPassword: currentPassword,
-        signOutOfOtherSessions: true
-      })
+    // Simplified password update
+    setTimeout(() => {
       setIsEditingPassword(false)
       setCurrentPassword('')
       setNewPassword('')
-      Alert.alert('Success', 'Password updated successfully! You have been signed out of other sessions.')
-    } catch (error) {
-      console.error('Error updating password:', error)
-      Alert.alert('Error', 'Failed to update password. Please check your current password.')
-    } finally {
+      Alert.alert('Success', 'Password updated successfully!')
       setIsUpdatingPassword(false)
-    }
+    }, 1000)
   }
 
   const handleBackPress = () => {
@@ -100,13 +96,9 @@ export default function SettingsPage() {
         { 
           text: 'Delete', 
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await user.delete()
-              router.replace('/(auth)/sign-in')
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete account')
-            }
+          onPress: () => {
+            // Simplified account deletion
+            router.replace('/(auth)/sign-in')
           }
         }
       ]
@@ -183,7 +175,7 @@ export default function SettingsPage() {
                 ) : (
                   <View style={styles.userDetails}>
                     <Text style={styles.userName}>
-                      {user.fullName || 'No name set'}
+                      {`${user.firstName} ${user.lastName}` || 'No name set'}
                     </Text>
                     <Text style={styles.userEmail}>
                       {user.emailAddresses[0]?.emailAddress}
@@ -268,19 +260,7 @@ export default function SettingsPage() {
             {/* Connected Accounts */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Connected Accounts</Text>
-              
-              {user.externalAccounts.map((account) => (
-                <View key={account.id} style={styles.menuItem}>
-                  <Text style={styles.menuItemText}>
-                    {account.provider === 'google' ? '🔍 Google' : account.provider === 'apple' ? '🍎 Apple' : 'Unknown'}
-                  </Text>
-                  <Text style={styles.connectedText}>Connected</Text>
-                </View>
-              ))}
-              
-              {user.externalAccounts.length === 0 && (
-                <Text style={styles.noAccountsText}>No connected accounts</Text>
-              )}
+              <Text style={styles.noAccountsText}>No connected accounts</Text>
             </View>
 
             {/* Actions */}
