@@ -12,7 +12,6 @@ export default function Page() {
 
   // Handle submission of sign-up form
   const onSignUpPress = async () => {
-    // Simplified sign-up - just navigate to main app
     if (emailAddress && password) {
       try {
         await signIn("password", {
@@ -24,7 +23,6 @@ export default function Page() {
       } catch (error) {
         alert('Sign up failed. Please check your credentials and try again.');
       }
-      router.replace('/')
     } else {
       alert('Please enter email and password')
     }
