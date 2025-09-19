@@ -1,0 +1,23 @@
+# Example override file for development
+# Copy this to docker-compose.override.yml and customize as needed
+
+version: '3.8'
+
+services:
+  restaurant-api:
+    # Enable live reloading in development
+    volumes:
+      - .:/app
+      - /app/tmp
+    environment:
+      - ENV=development
+    
+  postgres:
+    # Expose additional ports or add custom configuration
+    environment:
+      - POSTGRES_DB=restaurant_dev
+    
+  redis:
+    # Development Redis configuration
+    ports:
+      - "6379:6379"
