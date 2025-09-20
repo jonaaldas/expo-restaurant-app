@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,135 +9,31 @@ import {
 } from "react-native";
 import Colors from "@/constants/Colors";
 import { ofetch } from "ofetch";
-import { useStripe } from "@stripe/stripe-react-native";
 import { useUser } from "@/contexts/user";
-import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
+import UpgradeButton from "@/components/UpgradeButton";
 
 export default function SubscribePage() {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [loading, setLoading] = useState(false);
-  const queryClient = useQueryClient();
   const router = useRouter();
 
-  const { user, subscription, isLoadingSubscription, refreshSubscription } = useUser();
-  
-  // Log subscription data to see what we're getting
-  console.log("Subscription data in subscribe page:", subscription);
-  console.log("Is loading subscription:", isLoadingSubscription);
-  const handleSubscribe = useCallback(async () => {
-    await handlePurchase("monthly");
-  }, []);
-
-  const handlePurchase = useCallback(
-    async (period: "monthly") => {
-      try {
-        setLoading(true);
-        const createCustomerResponse = await ofetch(
-          `${process.env.EXPO_PUBLIC_JS_SERVER_URL}/new_customer`,
-          {
-            method: "POST",
-            body: {
-              name: user?.name,
-              userID: user?._id,
-              email: user?.email,
-            },
-          }
-        );
-        const createCustomer = await createCustomerResponse;
-        console.log("createCustomer", createCustomer);
-
-        if (!createCustomer.success) {
-          alert("Failed to create customer.");
-          return;
-        }
-
-        const customerId = createCustomer.customer.id;
-
-        const hasActiveSubscriptionResponse = await ofetch(
-          `${process.env.EXPO_PUBLIC_JS_SERVER_URL}/check-subscription`,
-          {
-            method: "POST",
-            body: {
-              userID: user?._id,
-            },
-          }
-        );
-
-        const hasActiveSubscription = await hasActiveSubscriptionResponse;
-        if (hasActiveSubscription.hasActiveSubscription) {
-          alert("You already have an active subscription.");
-          return;
-        }
-
-        const res = await ofetch(
-          `${process.env.EXPO_PUBLIC_JS_SERVER_URL}/sheet`,
-          {
-            method: "POST",
-            body: { period, customerId },
-          }
-        );
-
-        const resJson = await res;
-
-        const initConfig = {
-          merchantDisplayName: "AI Journal",
-          customerId: resJson.customer,
-          customerEphemeralKeySecret: resJson.ephemeralKey,
-          allowsDelayedPaymentMethods: true,
-          paymentMethodOrder: ["card", "applePay", "googlePay"],
-          defaultBillingDetails: {
-            email: user?.email,
-          },
-          returnURL: "app://stripe-redirect",
-        };
-
-        const { error: initError } = await initPaymentSheet({
-          ...initConfig,
-          paymentIntentClientSecret: resJson.clientSecret,
-        });
-        if (initError) {
-          console.log(initError);
-          alert("Purchase failed. Please try again.");
-          return;
-        }
-        const { error: presentError } = await presentPaymentSheet();
-        if (!presentError) {
-          // Refresh subscription data after successful payment
-          refreshSubscription();
-          
-          Alert.alert(
-            "Subscription Successful! 🎉",
-            "Your subscription is now active. Enjoy unlimited access!",
-            [
-              {
-                text: "OK",
-                onPress: () => router.replace("/(app)")
-              }
-            ]
-          );
-        }
-      } catch (error) {
-        console.log("error", error);
-        alert("Purchase failed. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [initPaymentSheet, presentPaymentSheet]
-  );
+  const { user, refreshSubscription } = useUser();
 
   const handleContinueFree = async () => {
     try {
       setLoading(true);
       
+      if (!user?._id || !user?.email) {
+        Alert.alert("Error", "User information is missing. Please try logging in again.");
+        return;
+      }
+      
       await ofetch(`${process.env.EXPO_PUBLIC_JS_SERVER_URL}/stay-free`, {
         method: "POST",
         body: {
-          userID: user?._id,
-          email: user?.email,
-          name: user?.name,
+          userID: user._id,
+          email: user.email,
+          name: user?.name || "Unknown User",
         },
       });
 
@@ -156,10 +52,13 @@ export default function SubscribePage() {
       );
     } catch (error) {
       console.error("Error setting free plan:", error);
-      Alert.alert(
-        "Error",
-        "Something went wrong. Please try again."
-      );
+      
+      let errorMessage = "Something went wrong setting up your free plan. Please try again.";
+      if (error instanceof Error && error.message.includes("network")) {
+        errorMessage = "Network error. Please check your connection and try again.";
+      }
+      
+      Alert.alert("Free Plan Setup Failed", errorMessage);
     } finally {
       setLoading(false);
     }
@@ -206,18 +105,16 @@ export default function SubscribePage() {
 
         {/* Buttons */}
         <View style={styles.buttonContainer}>
-          <Pressable
-            style={[
-              styles.subscribeButton,
-              loading && styles.disabledButton,
-            ]}
-            onPress={handleSubscribe}
-            disabled={loading}
-          >
-            <Text style={styles.subscribeButtonText}>
-              {loading ? "Processing..." : "Subscribe Now"}
-            </Text>
-          </Pressable>
+          <UpgradeButton 
+            style={styles.subscribeButton}
+            textStyle={styles.subscribeButtonText}
+            onSuccess={() => {
+              Alert.alert(
+                "Welcome to Premium! 🎉",
+                "You now have unlimited access to all features."
+              );
+            }}
+          />
 
           <Pressable
             style={styles.freeButton}

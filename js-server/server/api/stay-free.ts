@@ -13,6 +13,13 @@ export default defineEventHandler(async (event) => {
         statusMessage: 'userID is required'
       })
     }
+    
+    if (!email) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'email is required for creating customer'
+      })
+    }
 
     console.log('Setting user to free plan:', userID)
 
@@ -22,26 +29,52 @@ export default defineEventHandler(async (event) => {
     if (!customer) {
       console.log('Creating new Stripe customer for free tier user:', userID)
       
-      // Create Stripe customer for free tier user
-      const stripeCustomer = await stripe.customers.create({
-        email: email,
-        name: name,
-        metadata: {
-          userID: userID.toString()
-        }
-      })
+      try {
+        // Create Stripe customer for free tier user
+        const stripeCustomer = await stripe.customers.create({
+          email: email,
+          name: name || "Free Tier User",
+          metadata: {
+            userID: userID.toString(),
+            tier: "free",
+            createdAt: new Date().toISOString()
+          }
+        })
 
-      // Store customer in stripe-store
-      await stripeStore.setCustomer(userID, stripeCustomer)
-      customer = stripeCustomer
+        // Store customer in stripe-store
+        await stripeStore.setCustomer(userID, stripeCustomer)
+        customer = stripeCustomer
+        console.log('Successfully created free tier customer:', stripeCustomer.id)
+      } catch (stripeError) {
+        console.error('Failed to create Stripe customer:', stripeError)
+        throw createError({
+          statusCode: 503,
+          statusMessage: 'Failed to create customer account'
+        })
+      }
     }
     
     // Set subscription status to "free" (not "none")
     const freeStatus = { status: "free" } as const
     
-    // Update their subscription status to free
-    await stripeStore.setSubscription(customer.id, freeStatus as STRIPE_SUB_CACHE)
-    console.log('User subscription set to free:', userID)
+    try {
+      // Update their subscription status to free
+      await stripeStore.setSubscription(customer.id, freeStatus as STRIPE_SUB_CACHE)
+      console.log('User subscription set to free:', userID)
+      
+      // Verify the status was set correctly
+      const verifyStatus = await stripeStore.getSubscription(customer.id)
+      if (verifyStatus?.status !== "free") {
+        console.error('Subscription status verification failed:', verifyStatus)
+        throw new Error('Failed to set subscription status')
+      }
+    } catch (statusError) {
+      console.error('Failed to set subscription status:', statusError)
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Failed to set subscription status'
+      })
+    }
 
     return {
       success: true,

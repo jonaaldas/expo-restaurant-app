@@ -1,5 +1,6 @@
 import { createError, defineEventHandler, readBody } from 'h3'
 import stripeStore from '../utils/stripe-store'
+import { stripe } from '../utils/stripe'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -14,7 +15,28 @@ export default defineEventHandler(async (event) => {
     }
 
     // Get customer and subscription from stripe-store using userID
-    const customer = await stripeStore.getCustomer(userID)
+    let customer = await stripeStore.getCustomer(userID)
+    
+    // If customer not found in cache, try to find in Stripe and cache it
+    if (!customer) {
+      console.log('Customer not found in cache, checking Stripe...')
+      try {
+        // Look up user in Stripe by metadata
+        const stripeCustomers = await stripe.customers.list({
+          limit: 1,
+          metadata: { userID: userID }
+        })
+        
+        if (stripeCustomers.data.length > 0) {
+          customer = stripeCustomers.data[0]
+          console.log('Found customer in Stripe, caching:', customer.id)
+          // Cache for future lookups
+          await stripeStore.setCustomer(userID, customer)
+        }
+      } catch (stripeError) {
+        console.error('Error looking up customer in Stripe:', stripeError)
+      }
+    }
 
     if (!customer) {
       // No customer found - user hasn't chosen a plan yet

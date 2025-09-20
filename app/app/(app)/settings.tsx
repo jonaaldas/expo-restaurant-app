@@ -14,13 +14,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import Colors from '@/constants/Colors'
 import { SignOutButton } from '@/components/SignOutButton'
-import { useQuery } from 'convex/react'
-import { api } from '@/convex/_generated/api'
+import { useUser } from '@/contexts/user'
+import UpgradeButton from '@/components/UpgradeButton'
 
 export default function SettingsPage() {
   const router = useRouter()
-  // Hardcoded user data
-  const user = useQuery(api.user.getUser);
+  const { user, subscription, isLoadingSubscription } = useUser();
   
   
   // Password update states
@@ -31,6 +30,11 @@ export default function SettingsPage() {
 
   // Check if user signed in with email (has password capability)
   const hasEmailPassword = user?.email !== undefined
+  
+  // Get subscription status
+  const subscriptionStatus = subscription?.subscriptions?.[0]?.status
+  const isFreeTier = subscriptionStatus === 'free'
+  const isPaidTier = subscriptionStatus === 'active' || subscriptionStatus === 'trialing'
 
 
   const handleUpdatePassword = async () => {
@@ -134,6 +138,51 @@ export default function SettingsPage() {
                 )}
               </View>
             )}
+
+            {/* Subscription Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Subscription</Text>
+              
+              <View style={styles.menuItem}>
+                <Text style={styles.menuItemText}>Plan</Text>
+                <Text style={[
+                  styles.menuItemValue,
+                  isPaidTier && styles.premiumText,
+                  isFreeTier && styles.freeText
+                ]}>
+                  {isLoadingSubscription ? 'Loading...' : 
+                   isPaidTier ? '🚀 Premium' :
+                   isFreeTier ? '🆓 Free' : 
+                   '⏳ Not Set'}
+                </Text>
+              </View>
+
+              {isPaidTier && (
+                <View style={styles.menuItem}>
+                  <Text style={styles.menuItemText}>Status</Text>
+                  <Text style={[styles.menuItemValue, styles.premiumText]}>
+                    Active
+                  </Text>
+                </View>
+              )}
+
+              {isFreeTier && (
+                <View style={styles.upgradeSection}>
+                  <Text style={styles.upgradeText}>
+                    Upgrade to Premium for unlimited restaurants and advanced features!
+                  </Text>
+                  <UpgradeButton 
+                    style={styles.upgradeButtonInSettings}
+                    onSuccess={() => {
+                      Alert.alert(
+                        "Welcome to Premium! 🎉", 
+                        "You now have unlimited access to all features."
+                      );
+                    }}
+                  />
+                </View>
+              )}
+            </View>
 
             {/* Account Section */}
             <View style={styles.section}>
@@ -290,5 +339,32 @@ const styles = StyleSheet.create({
     color: Colors.colors.gray,
     textAlign: 'center',
     paddingVertical: 8,
+  },
+  premiumText: {
+    color: Colors.colors.orange,
+    fontWeight: '600',
+  },
+  freeText: {
+    color: Colors.colors.gray,
+    fontWeight: '500',
+  },
+  upgradeSection: {
+    backgroundColor: '#FFF4E6',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#FFE4B5',
+  },
+  upgradeText: {
+    fontSize: 14,
+    color: Colors.colors.navy,
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  upgradeButtonInSettings: {
+    paddingVertical: 12,
+    borderRadius: 12,
   },
 })
