@@ -21,7 +21,6 @@ export default function SettingsPage() {
   const router = useRouter()
   // Hardcoded user data
   const user = useQuery(api.user.getUser);
-  console.log("user", user);
   
   
   // Password update states

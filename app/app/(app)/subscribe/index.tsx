@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -6,34 +6,114 @@ import {
   Pressable,
   SafeAreaView,
   Alert,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import Colors from '@/constants/Colors';
+} from "react-native";
+import Colors from "@/constants/Colors";
+import { ofetch } from "ofetch";
+import { useStripe } from "@stripe/stripe-react-native";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 export default function SubscribePage() {
-  const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const [loading, setLoading] = useState(false);
 
-  const handleSubscribe = async () => {
-    setIsProcessing(true);
-    try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      Alert.alert(
-        'Success!',
-        'Welcome to Premium! You now have access to all features.',
-        [{ text: 'Continue', onPress: () => router.back() }]
-      );
-    } catch (error) {
-      Alert.alert('Error', 'Payment failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  const user = useQuery(api.user.getUser);
+  const handleSubscribe = useCallback(async () => {
+    await handlePurchase("monthly");
+  }, []);
+
+  const handlePurchase = useCallback(
+    async (period: "monthly") => {
+      try {
+        setLoading(true);
+        const createCustomerResponse = await ofetch(
+          `${process.env.EXPO_PUBLIC_JS_SERVER_URL}/new_customer`,
+          {
+            method: "POST",
+            body: {
+              name: user?.name,
+              userID: user?._id,
+              email: user?.email,
+            },
+          }
+        );
+        const createCustomer = await createCustomerResponse;
+        console.log("createCustomer", createCustomer);
+
+        if (!createCustomer.success) {
+          alert("Failed to create customer.");
+          return;
+        }
+
+        const customerId = createCustomer.customer.id;
+
+        const hasActiveSubscriptionResponse = await ofetch(
+          `${process.env.EXPO_PUBLIC_JS_SERVER_URL}/check-subscription`,
+          {
+            method: "POST",
+            body: {
+              customerId: customerId,
+            },
+          }
+        );
+
+        const hasActiveSubscription = await hasActiveSubscriptionResponse;
+        if (hasActiveSubscription.hasActiveSubscription) {
+          alert("You already have an active subscription.");
+          return;
+        }
+
+        const res = await ofetch(
+          `${process.env.EXPO_PUBLIC_JS_SERVER_URL}/sheet`,
+          {
+            method: "POST",
+            body: { period, customerId },
+          }
+        );
+
+        const resJson = await res;
+
+        const initConfig = {
+          merchantDisplayName: "AI Journal",
+          customerId: resJson.customer,
+          customerEphemeralKeySecret: resJson.ephemeralKey,
+          allowsDelayedPaymentMethods: true,
+          paymentMethodOrder: ["card", "applePay", "googlePay"],
+          defaultBillingDetails: {
+            email: user?.email,
+          },
+          returnURL: "app://stripe-redirect",
+        };
+
+        const { error: initError } = await initPaymentSheet({
+          ...initConfig,
+          paymentIntentClientSecret: resJson.clientSecret,
+        });
+        if (initError) {
+          console.log(initError);
+          alert("Purchase failed. Please try again.");
+          return;
+        }
+        const { error: presentError } = await presentPaymentSheet();
+        if (!presentError) {
+          // onSubscriptionComplete?.()
+        }
+      } catch (error) {
+        console.log("error", error);
+        alert("Purchase failed. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [initPaymentSheet, presentPaymentSheet]
+  );
 
   const handleContinueFree = () => {
-    router.back();
+    // here we stay with the current free plan only 3 saved restaurants
+    Alert.alert(
+      "You are still on the free plan. You can save up to 3 restaurants."
+    ); // temp
   };
 
   return (
@@ -46,27 +126,25 @@ export default function SubscribePage() {
             Get unlimited access to all restaurant features
           </Text>
         </View>
-
         {/* Features */}
         <View style={styles.featuresContainer}>
           <View style={styles.feature}>
             <Text style={styles.featureIcon}>🍔</Text>
             <Text style={styles.featureText}>Save unlimited restaurants</Text>
           </View>
-          
+
           <View style={styles.feature}>
             <Text style={styles.featureIcon}>=�</Text>
             <Text style={styles.featureText}>Create detailed notes</Text>
           </View>
-          
+
           <View style={styles.feature}>
             <Text style={styles.featureIcon}>=�</Text>
             <Text style={styles.featureText}>Export your data</Text>
           </View>
-          
+
           <View style={styles.feature}>
-            <Text style={styles.featureIcon}>=
-</Text>
+            <Text style={styles.featureIcon}>=</Text>
             <Text style={styles.featureText}>Advanced search tools</Text>
           </View>
         </View>
@@ -80,19 +158,22 @@ export default function SubscribePage() {
         {/* Buttons */}
         <View style={styles.buttonContainer}>
           <Pressable
-            style={[styles.subscribeButton, isProcessing && styles.disabledButton]}
+            style={[
+              styles.subscribeButton,
+              loading && styles.disabledButton,
+            ]}
             onPress={handleSubscribe}
-            disabled={isProcessing}
+            disabled={loading}
           >
             <Text style={styles.subscribeButtonText}>
-              {isProcessing ? 'Processing...' : 'Subscribe Now'}
+              {loading ? "Processing..." : "Subscribe Now"}
             </Text>
           </Pressable>
 
           <Pressable
             style={styles.freeButton}
             onPress={handleContinueFree}
-            disabled={isProcessing}
+            disabled={loading}
           >
             <Text style={styles.freeButtonText}>Continue with Free</Text>
           </Pressable>
@@ -116,30 +197,30 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     paddingVertical: 40,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.colors.navy,
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 18,
     color: Colors.colors.gray,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
   },
   featuresContainer: {
     marginBottom: 40,
   },
   feature: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 20,
     paddingHorizontal: 16,
   },
@@ -153,12 +234,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   priceContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   price: {
     fontSize: 48,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.colors.orange,
   },
   priceSubtext: {
@@ -173,7 +254,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.colors.orange,
     borderRadius: 16,
     paddingVertical: 18,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 16,
     shadowColor: Colors.colors.orange,
     shadowOffset: { width: 0, height: 4 },
@@ -184,19 +265,19 @@ const styles = StyleSheet.create({
   subscribeButtonText: {
     color: Colors.colors.white,
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   freeButton: {
     borderWidth: 2,
     borderColor: Colors.colors.gray,
     borderRadius: 16,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   freeButtonText: {
     color: Colors.colors.gray,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   disabledButton: {
     opacity: 0.6,
@@ -204,7 +285,7 @@ const styles = StyleSheet.create({
   footer: {
     fontSize: 14,
     color: Colors.colors.gray,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 20,
   },
 });

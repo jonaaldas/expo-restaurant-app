@@ -4,6 +4,7 @@ import { Link, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Colors from '@/constants/Colors'
 import { useAuthActions } from "@convex-dev/auth/react";  
+
 export default function Page() {
   const router = useRouter()
   const { signIn } = useAuthActions();
@@ -19,6 +20,7 @@ export default function Page() {
           password: password,
           flow: "signUp",
         });
+
         router.replace('/');
       } catch (error) {
         alert('Sign up failed. Please check your credentials and try again.');

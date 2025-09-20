@@ -75,4 +75,13 @@ export default defineSchema({
     .index("by_user_restaurant", ["userId", "restaurantPlaceId"])
     .index("by_created_at", ["createdAt"])
     .index("by_updated_at", ["updatedAt"]),
+  
+  stripe: defineTable({
+    userId: v.string(),
+    customerId: v.string(),
+    paid: v.boolean(),
+    createdAt: v.float64(),
+    updatedAt: v.float64(),
+  })
+    .index("by_user_id", ["userId"])
 });
