@@ -1,12 +1,13 @@
 import { Restaurant, SearchParams } from "@/types/restaurants";
 import { createContext, useContext, useState, ReactNode } from "react";
 import { searchRestaurants } from "@/utils/restaurants";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "expo-router";
 import { Alert } from "react-native";
 import { useSavedRestaurants, useAllRestaurantIds } from "@/hooks/useSavedRestaurants";
-import { useNotes, useNotesByRestaurant, useAllNotesByUser, useRecentNotes } from "@/hooks/useNotes";
-
+import { useNotes, useAllNotesByUser, useRecentNotes } from "@/hooks/useNotes";
+import { useQuery } from 'convex/react'
+import { api } from '@/convex/_generated/api'
 interface RestaurantContextType {
   restaurants: Restaurant[];
   savedRestaurants: Restaurant[];
@@ -29,6 +30,7 @@ interface RestaurantContextType {
   isCreatingNote: boolean;
   isUpdatingNote: boolean;
   isDeletingNote: boolean;
+  user: any | undefined
 }
 
 export const RestaurantContext = createContext<
@@ -44,8 +46,7 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const pathname = usePathname();
-  
-  // Use Convex hooks for saved restaurants
+
   const { 
     savedRestaurants, 
     saveRestaurant: convexSaveRestaurant, 
@@ -53,7 +54,8 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
   } = useSavedRestaurants();
   
   const restaurantIds = useAllRestaurantIds();
-
+  const user = useQuery(api.user.getUser);
+  console.log("User in context:", user);
   // Use Convex hooks for notes
   const { 
     createNote: convexCreateNote, 
@@ -239,6 +241,7 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
     isCreatingNote: createNoteMutation.isPending,
     isUpdatingNote: updateNoteMutation.isPending,
     isDeletingNote: deleteNoteMutation.isPending,
+    user: user,
   };
 
   return (

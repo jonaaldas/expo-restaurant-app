@@ -1,5 +1,6 @@
 import { createError, defineEventHandler, readBody } from 'h3'
 import { stripe } from '../utils/stripe'
+import stripeStore from '../utils/stripe-store'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -41,6 +42,8 @@ export default defineEventHandler(async (event) => {
         userID: userID.toString()
       }
     })
+
+    await stripeStore.setCustomer(userID, customer)
 
     return {
       success: true,

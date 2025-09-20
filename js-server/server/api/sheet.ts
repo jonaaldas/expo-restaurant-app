@@ -2,7 +2,6 @@ import { defineEventHandler, readBody } from "h3";
 import { createError } from "h3";
 import { stripe } from "../utils/stripe";
 
-
 const prices = {
   monthly: "price_1S9UDbPW6ilRA0XQFQLn4slG", // unlimited 9.99
 };

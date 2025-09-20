@@ -53,7 +53,7 @@ export default function SubscribePage() {
           {
             method: "POST",
             body: {
-              customerId: customerId,
+              userID: user?._id,
             },
           }
         );

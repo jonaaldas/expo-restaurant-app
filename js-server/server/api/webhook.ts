@@ -1,27 +1,10 @@
 import { createError, defineEventHandler, readRawBody, getHeader } from "h3";
 import type Stripe from "stripe";
 import { stripe } from "../utils/stripe";
-import stripeStore from "../utils/stripe-store";
+import stripeStore, { STRIPE_SUB_CACHE } from "../utils/stripe-store";
 const webhookSecret =
   process.env.STRIPE_WEBHOOK_SECRET || "whsec_rNkfnA9OmbHiHv8gpqZA675mqRrFiie5";
 // const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_DEV || ' whsec_707441a4edd442fe7629665520724dc9244c963954a9230bfc6ff5243d55ca74'
-
-export type STRIPE_SUB_CACHE =
-  | {
-      subscriptionId: string | null;
-      status: Stripe.Subscription.Status;
-      priceId: string | null;
-      currentPeriodStart: number | null;
-      currentPeriodEnd: number | null;
-      cancelAtPeriodEnd: boolean;
-      paymentMethod: {
-        brand: string | null;
-        last4: string | null;
-      } | null;
-    }
-  | {
-      status: "none";
-    };
 
 const allowedEvents: Stripe.Event.Type[] = [
   "checkout.session.completed",
@@ -121,8 +104,8 @@ export async function syncStripeDataToKV(customerId: string) {
   });
 
   if (subscriptions.data.length === 0) {
-    const subData = { status: "none" };
-    await stripeStore.setSubscription(customerId, subData);
+    const subData = { status: "free" };
+    await stripeStore.setSubscription(customerId, subData as STRIPE_SUB_CACHE);
     return subData;
   }
 
