@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event)
     const { userID, email, name } = body
-
+    console.log("new_customer", body)
     if (!userID) {
       throw createError({
         statusCode: 400,
@@ -44,6 +44,7 @@ export default defineEventHandler(async (event) => {
     })
 
     await stripeStore.setCustomer(userID, customer)
+    await stripeStore.setSubscription(customer.id, { status: "none" })
 
     return {
       success: true,

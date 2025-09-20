@@ -15,7 +15,9 @@ export type STRIPE_SUB_CACHE =
       } | null;
     }
   | {
-      status: "free";
+      status: "free"; 
+    } | {
+      status: "none";
     };
 
 const isDev = process.env.NODE_ENV === 'development' || 

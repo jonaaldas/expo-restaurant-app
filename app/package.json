@@ -15,7 +15,7 @@
     "@react-navigation/native": "^7.1.8",
     "@stripe/stripe-react-native": "0.50.3",
     "@tanstack/react-query": "^5.87.4",
-    "convex": "^1.27.0",
+    "convex": "^1.27.1",
     "expo": "~54.0.0",
     "expo-constants": "~18.0.7",
     "expo-dev-client": "~6.0.12",

@@ -8,25 +8,47 @@ import { useAuthActions } from "@convex-dev/auth/react";
 export default function Page() {
   const router = useRouter()
   const { signIn } = useAuthActions();
+  const [name, setName] = React.useState('')
   const [emailAddress, setEmailAddress] = React.useState('')
   const [password, setPassword] = React.useState('')
 
+  // Random generators for testing
+  const generateRandomData = () => {
+    const firstNames = ['Alex', 'Jordan', 'Casey', 'Morgan', 'Taylor', 'Riley', 'Avery', 'Cameron', 'Quinn', 'Sage'];
+    const lastNames = ['Smith', 'Johnson', 'Brown', 'Davis', 'Miller', 'Wilson', 'Moore', 'Taylor', 'Anderson', 'Thomas'];
+    const randomFirst = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const randomLast = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const randomNumber = Math.floor(Math.random() * 9999);
+    
+    const randomName = `${randomFirst} ${randomLast}`;
+    const randomEmail = `${randomFirst.toLowerCase()}.${randomLast.toLowerCase()}${randomNumber}@test.com`;
+    
+    setName(randomName);
+    setEmailAddress(randomEmail);
+    setPassword('Jona1995!');
+  };
+
   // Handle submission of sign-up form
   const onSignUpPress = async () => {
-    if (emailAddress && password) {
+    if (name && emailAddress && password) {
       try {
         await signIn("password", {
+          name: name,
           email: emailAddress,
           password: password,
           flow: "signUp",
         });
 
-        router.replace('/');
+        // Add a delay to ensure auth state is updated, then redirect to subscription page
+        setTimeout(() => {
+          router.replace('/subscribe');
+        }, 200);
       } catch (error) {
-        alert('Sign up failed. Please check your credentials and try again.');
+        console.error('Sign up error:', error);
+        alert(`Sign up failed: ${error.message || 'Please check your credentials and try again.'}`);
       }
     } else {
-      alert('Please enter email and password')
+      alert('Please enter name, email and password')
     }
   }
 
@@ -45,6 +67,17 @@ export default function Page() {
           
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Join us to discover amazing restaurants</Text>
+
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              autoCapitalize="words"
+              value={name}
+              placeholder="Full Name..."
+              placeholderTextColor={Colors.light.tabIconDefault}
+              onChangeText={(name) => setName(name)}
+            />
+          </View>
 
           <View style={styles.inputContainer}>
             <TextInput
@@ -70,6 +103,10 @@ export default function Page() {
 
           <Pressable style={styles.button} onPress={onSignUpPress}>
             <Text style={styles.buttonText}>Sign up</Text>
+          </Pressable>
+
+          <Pressable style={styles.randomButton} onPress={generateRandomData}>
+            <Text style={styles.randomButtonText}>🎲 Generate Random Test Data</Text>
           </Pressable>
 
           <View style={styles.footer}>
@@ -137,12 +174,24 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     marginTop: 16,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  randomButton: {
+    backgroundColor: '#6B7280',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  randomButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',

@@ -10,15 +10,22 @@ import {
 import Colors from "@/constants/Colors";
 import { ofetch } from "ofetch";
 import { useStripe } from "@stripe/stripe-react-native";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useUser } from "@/contexts/user";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 
 export default function SubscribePage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const router = useRouter();
 
-  const user = useQuery(api.user.getUser);
+  const { user, subscription, isLoadingSubscription, refreshSubscription } = useUser();
+  
+  // Log subscription data to see what we're getting
+  console.log("Subscription data in subscribe page:", subscription);
+  console.log("Is loading subscription:", isLoadingSubscription);
   const handleSubscribe = useCallback(async () => {
     await handlePurchase("monthly");
   }, []);
@@ -97,7 +104,19 @@ export default function SubscribePage() {
         }
         const { error: presentError } = await presentPaymentSheet();
         if (!presentError) {
-          // onSubscriptionComplete?.()
+          // Refresh subscription data after successful payment
+          refreshSubscription();
+          
+          Alert.alert(
+            "Subscription Successful! 🎉",
+            "Your subscription is now active. Enjoy unlimited access!",
+            [
+              {
+                text: "OK",
+                onPress: () => router.replace("/(app)")
+              }
+            ]
+          );
         }
       } catch (error) {
         console.log("error", error);
@@ -109,11 +128,41 @@ export default function SubscribePage() {
     [initPaymentSheet, presentPaymentSheet]
   );
 
-  const handleContinueFree = () => {
-    // here we stay with the current free plan only 3 saved restaurants
-    Alert.alert(
-      "You are still on the free plan. You can save up to 3 restaurants."
-    ); // temp
+  const handleContinueFree = async () => {
+    try {
+      setLoading(true);
+      
+      await ofetch(`${process.env.EXPO_PUBLIC_JS_SERVER_URL}/stay-free`, {
+        method: "POST",
+        body: {
+          userID: user?._id,
+          email: user?.email,
+          name: user?.name,
+        },
+      });
+
+      // Refresh subscription data after setting free plan
+      refreshSubscription();
+
+      Alert.alert(
+        "Free Plan Selected ✅",
+        "You are now on the free plan. You can save up to 3 restaurants and upgrade anytime in settings.",
+        [
+          {
+            text: "Continue",
+            onPress: () => router.replace("/(app)")
+          }
+        ]
+      );
+    } catch (error) {
+      console.error("Error setting free plan:", error);
+      Alert.alert(
+        "Error",
+        "Something went wrong. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

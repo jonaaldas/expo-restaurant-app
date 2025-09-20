@@ -21,8 +21,7 @@ export default function Index() {
   const [textInputValue, setTextInputValue] = useState("");
 
   const handleSettingsPress = () => {
-    // router.push('/(app)/settings');
-    router.push('/(app)/subscribe');
+    router.push('/(app)/settings');
   };
   
   return (

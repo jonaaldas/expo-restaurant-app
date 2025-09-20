@@ -6,8 +6,7 @@ import { usePathname, useRouter } from "expo-router";
 import { Alert } from "react-native";
 import { useSavedRestaurants, useAllRestaurantIds } from "@/hooks/useSavedRestaurants";
 import { useNotes, useAllNotesByUser, useRecentNotes } from "@/hooks/useNotes";
-import { useQuery } from 'convex/react'
-import { api } from '@/convex/_generated/api'
+import { useUser } from "@/contexts/user";
 interface RestaurantContextType {
   restaurants: Restaurant[];
   savedRestaurants: Restaurant[];
@@ -30,7 +29,6 @@ interface RestaurantContextType {
   isCreatingNote: boolean;
   isUpdatingNote: boolean;
   isDeletingNote: boolean;
-  user: any | undefined
 }
 
 export const RestaurantContext = createContext<
@@ -47,6 +45,9 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
   const queryClient = useQueryClient();
   const pathname = usePathname();
 
+  // Use the user context instead of fetching user data here
+  const { user } = useUser();
+
   const { 
     savedRestaurants, 
     saveRestaurant: convexSaveRestaurant, 
@@ -54,8 +55,7 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
   } = useSavedRestaurants();
   
   const restaurantIds = useAllRestaurantIds();
-  const user = useQuery(api.user.getUser);
-  console.log("User in context:", user);
+
   // Use Convex hooks for notes
   const { 
     createNote: convexCreateNote, 
@@ -241,7 +241,6 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
     isCreatingNote: createNoteMutation.isPending,
     isUpdatingNote: updateNoteMutation.isPending,
     isDeletingNote: deleteNoteMutation.isPending,
-    user: user,
   };
 
   return (

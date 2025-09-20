@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import "react-native-reanimated";
 import { useColorScheme } from "@/components/useColorScheme";
 import { RestaurantProvider } from "@/contexts/restaurant";
+import { UserProvider } from "@/contexts/user";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConvexReactClient } from "convex/react";
 import { Platform } from 'react-native'
@@ -78,24 +79,26 @@ function RootLayoutNav() {
         value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
       >
         <QueryClientProvider client={queryClient}>
-          <RestaurantProvider>
-            <ExpoStripeProvider>
-              <Stack>
-                <Stack.Screen 
-                  name="index" 
-                  options={{ headerShown: false }} 
-                />
-                <Stack.Screen 
-                  name="(app)" 
-                  options={{ headerShown: false }} 
-                />
-                <Stack.Screen 
-                  name="(auth)" 
-                  options={{ headerShown: false }} 
-                />
-              </Stack>
-            </ExpoStripeProvider>
-          </RestaurantProvider>
+          <UserProvider>
+            <RestaurantProvider>
+              <ExpoStripeProvider>
+                <Stack>
+                  <Stack.Screen 
+                    name="index" 
+                    options={{ headerShown: false }} 
+                  />
+                  <Stack.Screen 
+                    name="(app)" 
+                    options={{ headerShown: false }} 
+                  />
+                  <Stack.Screen 
+                    name="(auth)" 
+                    options={{ headerShown: false }} 
+                  />
+                </Stack>
+              </ExpoStripeProvider>
+            </RestaurantProvider>
+          </UserProvider>
         </QueryClientProvider>
       </ThemeProvider>
     </ConvexAuthProvider>

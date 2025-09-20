@@ -5,7 +5,6 @@ export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event)
     const { userID } = body;
-    console.log('Received subscription check request for userID:', userID);
 
     if (!userID) {
       throw createError({
@@ -16,24 +15,21 @@ export default defineEventHandler(async (event) => {
 
     // Get customer and subscription from stripe-store using userID
     const customer = await stripeStore.getCustomer(userID)
-    console.log('Found customer:', customer ? 'yes' : 'no')
-    
+
     if (!customer) {
-      console.log('No customer found, returning free tier')
-      // save in stripe-store
+      // No customer found - user hasn't chosen a plan yet
       const response = {
         hasActiveSubscription: false,
         customer: null,
-        subscriptions: [{status: 'free'}]
+        subscriptions: [{status: 'none'}]
       }
-      console.log('Sending response:', response)
       return response
     }
 
     const subscription = await stripeStore.getSubscription(customer.id)
-    console.log('Found subscription:', subscription ? 'yes' : 'no')
 
     if (!subscription) {
+      // Customer exists but no subscription record - treat as none (needs to choose plan)
       const response = {
         hasActiveSubscription: false,
         customer: {
@@ -42,15 +38,33 @@ export default defineEventHandler(async (event) => {
           name: customer.name,
           metadata: customer.metadata
         },
-        subscriptions: [{status: 'free'}]
+        subscriptions: [{status: 'none'}]
       }
-      console.log('No subscription found, sending response:', response)
       return response
     }
 
-    // Check if subscription is active
+    // Check subscription status
     const isActive = subscription.status === 'active' || subscription.status === 'trialing'
-    console.log('Subscription status:', subscription.status, 'isActive:', isActive)
+    const isFree = subscription.status === 'free'
+
+    let subscriptionData;
+    if (isActive) {
+      // Active/paid subscription with full details
+      subscriptionData = [{
+        id: subscription.subscriptionId,
+        status: subscription.status,
+        current_period_start: subscription.currentPeriodStart,
+        current_period_end: subscription.currentPeriodEnd,
+        cancel_at_period_end: subscription.cancelAtPeriodEnd,
+        items: subscription.priceId || []
+      }];
+    } else if (isFree) {
+      // Free tier user
+      subscriptionData = [{status: 'free'}];
+    } else {
+      // Unknown status, treat as none
+      subscriptionData = [{status: 'none'}];
+    }
 
     const response = {
       hasActiveSubscription: isActive,
@@ -60,14 +74,7 @@ export default defineEventHandler(async (event) => {
         name: customer.name,
         metadata: customer.metadata
       },
-      subscriptions: isActive ? [{
-        id: subscription.subscriptionId,
-        status: subscription.status,
-        current_period_start: subscription.currentPeriodStart,
-        current_period_end: subscription.currentPeriodEnd,
-        cancel_at_period_end: subscription.cancelAtPeriodEnd,
-        items: subscription.priceId || []
-      }] : [{status: 'free'}]
+      subscriptions: subscriptionData
     }
     console.log('Sending final response:', response)
     return response
