@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,34 +6,62 @@ import {
   Pressable,
   SafeAreaView,
   Alert,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import Colors from '@/constants/Colors';
+} from "react-native";
+import Colors from "@/constants/Colors";
+import { ofetch } from "ofetch";
+import { useUser } from "@/contexts/user";
+import { useRouter } from "expo-router";
+import UpgradeButton from "@/components/UpgradeButton";
 
 export default function SubscribePage() {
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleSubscribe = async () => {
-    setIsProcessing(true);
+  const { user, refreshSubscription } = useUser();
+
+  const handleContinueFree = async () => {
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      setLoading(true);
       
+      if (!user?._id || !user?.email) {
+        Alert.alert("Error", "User information is missing. Please try logging in again.");
+        return;
+      }
+      
+      await ofetch(`${process.env.EXPO_PUBLIC_JS_SERVER_URL}/stay-free`, {
+        method: "POST",
+        body: {
+          userID: user._id,
+          email: user.email,
+          name: user?.name || "Unknown User",
+        },
+      });
+
+      // Refresh subscription data after setting free plan
+      refreshSubscription();
+
       Alert.alert(
-        'Success!',
-        'Welcome to Premium! You now have access to all features.',
-        [{ text: 'Continue', onPress: () => router.back() }]
+        "Free Plan Selected ✅",
+        "You are now on the free plan. You can save up to 3 restaurants and upgrade anytime in settings.",
+        [
+          {
+            text: "Continue",
+            onPress: () => router.replace("/(app)")
+          }
+        ]
       );
     } catch (error) {
-      Alert.alert('Error', 'Payment failed. Please try again.');
+      console.error("Error setting free plan:", error);
+      
+      let errorMessage = "Something went wrong setting up your free plan. Please try again.";
+      if (error instanceof Error && error.message.includes("network")) {
+        errorMessage = "Network error. Please check your connection and try again.";
+      }
+      
+      Alert.alert("Free Plan Setup Failed", errorMessage);
     } finally {
-      setIsProcessing(false);
+      setLoading(false);
     }
-  };
-
-  const handleContinueFree = () => {
-    router.back();
   };
 
   return (
@@ -46,27 +74,25 @@ export default function SubscribePage() {
             Get unlimited access to all restaurant features
           </Text>
         </View>
-
         {/* Features */}
         <View style={styles.featuresContainer}>
           <View style={styles.feature}>
             <Text style={styles.featureIcon}>🍔</Text>
             <Text style={styles.featureText}>Save unlimited restaurants</Text>
           </View>
-          
+
           <View style={styles.feature}>
             <Text style={styles.featureIcon}>=�</Text>
             <Text style={styles.featureText}>Create detailed notes</Text>
           </View>
-          
+
           <View style={styles.feature}>
             <Text style={styles.featureIcon}>=�</Text>
             <Text style={styles.featureText}>Export your data</Text>
           </View>
-          
+
           <View style={styles.feature}>
-            <Text style={styles.featureIcon}>=
-</Text>
+            <Text style={styles.featureIcon}>=</Text>
             <Text style={styles.featureText}>Advanced search tools</Text>
           </View>
         </View>
@@ -79,20 +105,21 @@ export default function SubscribePage() {
 
         {/* Buttons */}
         <View style={styles.buttonContainer}>
-          <Pressable
-            style={[styles.subscribeButton, isProcessing && styles.disabledButton]}
-            onPress={handleSubscribe}
-            disabled={isProcessing}
-          >
-            <Text style={styles.subscribeButtonText}>
-              {isProcessing ? 'Processing...' : 'Subscribe Now'}
-            </Text>
-          </Pressable>
+          <UpgradeButton 
+            style={styles.subscribeButton}
+            textStyle={styles.subscribeButtonText}
+            onSuccess={() => {
+              Alert.alert(
+                "Welcome to Premium! 🎉",
+                "You now have unlimited access to all features."
+              );
+            }}
+          />
 
           <Pressable
             style={styles.freeButton}
             onPress={handleContinueFree}
-            disabled={isProcessing}
+            disabled={loading}
           >
             <Text style={styles.freeButtonText}>Continue with Free</Text>
           </Pressable>
@@ -116,30 +143,30 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     paddingVertical: 40,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.colors.navy,
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 18,
     color: Colors.colors.gray,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
   },
   featuresContainer: {
     marginBottom: 40,
   },
   feature: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 20,
     paddingHorizontal: 16,
   },
@@ -153,12 +180,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   priceContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   price: {
     fontSize: 48,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.colors.orange,
   },
   priceSubtext: {
@@ -173,7 +200,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.colors.orange,
     borderRadius: 16,
     paddingVertical: 18,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 16,
     shadowColor: Colors.colors.orange,
     shadowOffset: { width: 0, height: 4 },
@@ -184,19 +211,19 @@ const styles = StyleSheet.create({
   subscribeButtonText: {
     color: Colors.colors.white,
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   freeButton: {
     borderWidth: 2,
     borderColor: Colors.colors.gray,
     borderRadius: 16,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   freeButtonText: {
     color: Colors.colors.gray,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   disabledButton: {
     opacity: 0.6,
@@ -204,7 +231,7 @@ const styles = StyleSheet.create({
   footer: {
     fontSize: 14,
     color: Colors.colors.gray,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 20,
   },
 });

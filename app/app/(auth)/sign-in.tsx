@@ -19,9 +19,12 @@ export default function Page() {
           email: emailAddress,
           password: password,
           flow: "signIn",
-          redirectTo: '/(app)',
         });
-        router.replace('/(app)');
+        
+        // Redirect to root to trigger subscription check for all users
+        setTimeout(() => {
+          router.replace('/(app)');
+        }, 200);
       } catch (error) {
         alert('Sign in failed. Please check your credentials and try again.');
       }

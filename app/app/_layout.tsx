@@ -11,14 +11,18 @@ import { useEffect } from "react";
 import "react-native-reanimated";
 import { useColorScheme } from "@/components/useColorScheme";
 import { RestaurantProvider } from "@/contexts/restaurant";
+import { UserProvider } from "@/contexts/user";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { ConvexReactClient } from "convex/react";
 import { Platform } from 'react-native'
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import * as SecureStore from "expo-secure-store";
+import ExpoStripeProvider from "./components/stripe-expo-provider";
+
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
 });
+
 const secureStorage = {
   getItem: SecureStore.getItemAsync,
   setItem: SecureStore.setItemAsync,
@@ -75,22 +79,26 @@ function RootLayoutNav() {
         value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
       >
         <QueryClientProvider client={queryClient}>
-          <RestaurantProvider>
-            <Stack>
-              <Stack.Screen 
-                name="index" 
-                options={{ headerShown: false }} 
-              />
-              <Stack.Screen 
-                name="(app)" 
-                options={{ headerShown: false }} 
-              />
-              <Stack.Screen 
-                name="(auth)" 
-                options={{ headerShown: false }} 
-              />
-            </Stack>
-          </RestaurantProvider>
+          <UserProvider>
+            <RestaurantProvider>
+              <ExpoStripeProvider>
+                <Stack>
+                  <Stack.Screen 
+                    name="index" 
+                    options={{ headerShown: false }} 
+                  />
+                  <Stack.Screen 
+                    name="(app)" 
+                    options={{ headerShown: false }} 
+                  />
+                  <Stack.Screen 
+                    name="(auth)" 
+                    options={{ headerShown: false }} 
+                  />
+                </Stack>
+              </ExpoStripeProvider>
+            </RestaurantProvider>
+          </UserProvider>
         </QueryClientProvider>
       </ThemeProvider>
     </ConvexAuthProvider>

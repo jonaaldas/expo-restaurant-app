@@ -1,12 +1,12 @@
 import { Restaurant, SearchParams } from "@/types/restaurants";
 import { createContext, useContext, useState, ReactNode } from "react";
 import { searchRestaurants } from "@/utils/restaurants";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "expo-router";
 import { Alert } from "react-native";
 import { useSavedRestaurants, useAllRestaurantIds } from "@/hooks/useSavedRestaurants";
-import { useNotes, useNotesByRestaurant, useAllNotesByUser, useRecentNotes } from "@/hooks/useNotes";
-
+import { useNotes, useAllNotesByUser, useRecentNotes } from "@/hooks/useNotes";
+import { useUser } from "@/contexts/user";
 interface RestaurantContextType {
   restaurants: Restaurant[];
   savedRestaurants: Restaurant[];
@@ -44,8 +44,10 @@ export const RestaurantProvider = ({ children }: RestaurantProviderProps) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const pathname = usePathname();
-  
-  // Use Convex hooks for saved restaurants
+
+  // Use the user context instead of fetching user data here
+  const { user } = useUser();
+
   const { 
     savedRestaurants, 
     saveRestaurant: convexSaveRestaurant, 
