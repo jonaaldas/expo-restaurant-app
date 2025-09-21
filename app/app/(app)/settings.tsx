@@ -8,7 +8,7 @@ import {
   TextInput, 
   Alert,
   KeyboardAvoidingView,
-  Platform
+    Platform,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -27,6 +27,9 @@ export default function SettingsPage() {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
+  
+  // Portal loading state
+  const [isLoadingPortal, setIsLoadingPortal] = useState(false)
 
   // Check if user signed in with email (has password capability)
   const hasEmailPassword = user?.email !== undefined
@@ -61,6 +64,12 @@ export default function SettingsPage() {
 
   const handleBackPress = () => {
     router.back()
+  }
+
+  const handleManageSubscription = async () => {
+    setIsLoadingPortal(true)
+    router.navigate("https://billing.stripe.com/p/login/test_9B69AVb5n5hU8bZgW39sk00")
+    setIsLoadingPortal(false)
   }
 
 
@@ -158,12 +167,24 @@ export default function SettingsPage() {
               </View>
 
               {isPaidTier && (
-                <View style={styles.menuItem}>
-                  <Text style={styles.menuItemText}>Status</Text>
-                  <Text style={[styles.menuItemValue, styles.premiumText]}>
-                    Active
-                  </Text>
-                </View>
+                <>
+                  <View style={styles.menuItem}>
+                    <Text style={styles.menuItemText}>Status</Text>
+                    <Text style={[styles.menuItemValue, styles.premiumText]}>
+                      Active
+                    </Text>
+                  </View>
+                  
+                  <Pressable 
+                    style={[styles.manageButton, isLoadingPortal && styles.disabledButton]}
+                    onPress={handleManageSubscription}
+                    disabled={isLoadingPortal}
+                  >
+                    <Text style={styles.manageButtonText}>
+                      {isLoadingPortal ? 'Loading...' : '⚙️ Manage Subscription'}
+                    </Text>
+                  </Pressable>
+                </>
               )}
 
               {isFreeTier && (
@@ -366,5 +387,18 @@ const styles = StyleSheet.create({
   upgradeButtonInSettings: {
     paddingVertical: 12,
     borderRadius: 12,
+  },
+  manageButton: {
+    backgroundColor: Colors.colors.navy,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  manageButtonText: {
+    color: Colors.colors.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
 })

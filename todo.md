@@ -1,0 +1,2 @@
+- [ ] Add reset password logic.
+- [ ] limit to 3 saved restaurant and 1 note per restaurant free tier. 
